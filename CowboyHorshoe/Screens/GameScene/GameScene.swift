@@ -1,3 +1,4 @@
+//
 // GameScene.swift
 
 import SpriteKit
@@ -12,9 +13,9 @@ class GameScene: SKScene {
     }
     
     var playerNode: SKSpriteNode!
-    var ballNodes: [SKShapeNode] = []
+    var horseshoeNodes: [SKShapeNode] = []
     var obstacleNodes: [SKSpriteNode] = []
-    var goalNodes: [SKSpriteNode] = []  // Для нескольких столбов.
+    var pillarNodes: [SKSpriteNode] = []  // Для нескольких столбов.
     
     override func didMove(to view: SKView) {
         backgroundColor = .white
@@ -53,41 +54,41 @@ class GameScene: SKScene {
         }
     }
     
-    // Создание узлов для игрока, мячей, препятствий и ворот.
+    // Создание узлов для игрока, подков, препятствий и столбов.
     func setupNodes() {
-        // Футболист – черный квадрат.
+        // Ковбой (игрок) – абстрактный черный квадрат.
         let playerSize = CGSize(width: cellSize * 0.8, height: cellSize * 0.8)
         playerNode = SKSpriteNode(color: .black, size: playerSize)
         playerNode.position = positionFor(gridX: viewModel.playerPosition.x, gridY: viewModel.playerPosition.y)
         addChild(playerNode)
         
-        // Мячи – красные круги.
-        for pos in viewModel.ballPositions {
-            let ballRadius = cellSize * 0.4
-            let ball = SKShapeNode(circleOfRadius: ballRadius)
-            ball.fillColor = .red
-            ball.strokeColor = .clear
-            ball.position = positionFor(gridX: pos.x, gridY: pos.y)
-            addChild(ball)
-            ballNodes.append(ball)
+        // Подковы – красные круги.
+        for pos in viewModel.horseshoePositions {
+            let hshoeRadius = cellSize * 0.3
+            let hshoe = SKShapeNode(circleOfRadius: hshoeRadius)
+            hshoe.fillColor = .red
+            hshoe.strokeColor = .clear
+            hshoe.position = positionFor(gridX: pos.x, gridY: pos.y)
+            addChild(hshoe)
+            horseshoeNodes.append(hshoe)
         }
         
-        // Препятствия – серые квадраты.
+        // Препятствия – зеленые квадраты.
         for pos in viewModel.obstaclePositions {
-            let obstacleSize = CGSize(width: cellSize * 0.8, height: cellSize * 0.8)
-            let obstacle = SKSpriteNode(color: .gray, size: obstacleSize)
+            let obstacleSize = CGSize(width: cellSize, height: cellSize)
+            let obstacle = SKSpriteNode(color: .green, size: obstacleSize)
             obstacle.position = positionFor(gridX: pos.x, gridY: pos.y)
             addChild(obstacle)
             obstacleNodes.append(obstacle)
         }
         
-        // Ворота – желтые квадраты (по одному на каждую позицию из goalPositions).
-        for pos in viewModel.goalPositions {
-            let goalSize = CGSize(width: cellSize * 0.8, height: cellSize * 0.8)
-            let goal = SKSpriteNode(color: .yellow, size: goalSize)
-            goal.position = positionFor(gridX: pos.x, gridY: pos.y)
-            addChild(goal)
-            goalNodes.append(goal)
+        // Столбы – желтые квадраты (по одному на каждую позицию из pillarPositions).
+        for pos in viewModel.pillarPositions {
+            let pillarSize = CGSize(width: cellSize * 0.3, height: cellSize * 0.8)
+            let pillar = SKSpriteNode(color: .orange, size: pillarSize)
+            pillar.position = positionFor(gridX: pos.x, gridY: pos.y)
+            addChild(pillar)
+            pillarNodes.append(pillar)
         }
     }
     
@@ -105,21 +106,20 @@ class GameScene: SKScene {
         playerNode.run(SKAction.move(to: newPlayerPos, duration: 0.2))
     }
     
-    /// Выполняет анимацию броска мяча:
-    /// 1. Сохраняет начальные позиции мячей.
-    /// 2. Вызывает viewModel.performShot() для обновления позиций.
-    /// 3. Для каждого мяча вычисляет последовательность клеток от исходной до конечной позиции и анимирует переход.
-    func performShot() {
-        // Сохраняем начальные позиции мячей.
-        let initialPositions = viewModel.ballPositions
+    /// Выполняет анимацию броска подковы:
+    /// 1. Сохраняет начальные позиции подков.
+    /// 2. Вызывает viewModel.performThrow() для обновления позиций.
+    /// 3. Для каждой подковы вычисляет последовательность клеток от исходной до конечной позиции и анимирует переход.
+    func performThrow() {
+        // Сохраняем начальные позиции подков.
+        let initialPositions = viewModel.horseshoePositions
+        // Вызываем логику броска в модели.
+        viewModel.performThrow()
         
-        // Вызываем логику удара в модели.
-        viewModel.performShot()
-        
-        // Для каждого мяча создаём анимацию перемещения от начальной позиции до новой (вычисленной моделью).
-        for (index, ballNode) in ballNodes.enumerated() {
+        // Для каждой подковы создаём анимацию перемещения от начальной позиции до новой (вычисленной моделью).
+        for (index, hshoeNode) in horseshoeNodes.enumerated() {
             let initial = initialPositions[index]
-            let final = viewModel.ballPositions[index]
+            let final = viewModel.horseshoePositions[index]
             
             var path: [(x: Int, y: Int)] = []
             if initial.x == final.x {
@@ -140,12 +140,13 @@ class GameScene: SKScene {
                 let moveAction = SKAction.move(to: destination, duration: 0.2)
                 actions.append(moveAction)
             }
+            
             let sequence = SKAction.sequence(actions)
-            ballNode.run(sequence) { [weak self] in
+            hshoeNode.run(sequence) { [weak self] in
                 guard let self = self else { return }
-                // Если мяч достиг ворот, меняем его цвет на зеленый.
-                if self.viewModel.goalPositions.contains(where: { $0.x == final.x && $0.y == final.y }) {
-                    ballNode.fillColor = .green
+                // Если подкова достигла столба, меняем цвет на зеленый.
+                if self.viewModel.pillarPositions.contains(where: { $0.x == final.x && $0.y == final.y }) {
+                    hshoeNode.fillColor = .green
                 }
             }
         }

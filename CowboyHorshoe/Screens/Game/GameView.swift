@@ -1,3 +1,4 @@
+//
 //  GameView.swift
 
 import SwiftUI
@@ -23,6 +24,8 @@ struct GameView: View {
                     scene.viewModel = viewModel
                 }
             
+            Spacer()
+            
             // Элементы управления: стрелки и кнопка "Throw"
             ControlPanelView(scene: scene)
         }
@@ -32,63 +35,4 @@ struct GameView: View {
 
 #Preview {
     GameView()
-}
-
-struct ControlPanelView: View {
-    
-    let scene: GameScene
-    
-    var body: some View {
-        HStack {
-            ZStack {
-                VStack(spacing: 20) {
-                    Button {
-                        scene.movePlayer(direction: .up)
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                    }
-                    
-                    Button {
-                        scene.movePlayer(direction: .down)
-                    } label: {
-                        Image(systemName: "arrow.down.circle.fill")
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                    }
-                }
-                
-                HStack(spacing: 20) {
-                    Button {
-                        scene.movePlayer(direction: .left)
-                    } label: {
-                        Image(systemName: "arrow.left.circle.fill")
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                    }
-                    
-                    Button {
-                        scene.movePlayer(direction: .right)
-                    } label: {
-                        Image(systemName: "arrow.right.circle.fill")
-                            .resizable()
-                            .frame(width: 50, height: 50)
-                    }
-                }
-            }
-            
-            Spacer()
-            
-            Button {
-                scene.performShot()
-            } label: {
-                Text("Throw")
-                    .frame(width: 100, height: 50)
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(8)
-            }
-        }
-    }
 }

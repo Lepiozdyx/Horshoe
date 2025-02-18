@@ -1,3 +1,4 @@
+//
 // GameViewModel.swift
 
 import Foundation
@@ -62,7 +63,7 @@ class GameViewModel: ObservableObject {
     ///    до достижения столба или до края игрового поля.
     /// 2. Если подкова, которая **не** стартовала на краю, оказывается на краю (и эта ячейка не является столбом) – игра считается проигранной («аут»).
     /// 3. Если в каждой ячейке столбов находится подкова – игра выиграна.
-    func performShot() {
+    func performThrow() {
         // Сохраняем изначальные позиции подков для проверки поражения.
         let initialHorseshoePositions = horseshoePositions
         
