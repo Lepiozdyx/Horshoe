@@ -8,28 +8,32 @@ struct GameView: View {
     
     @StateObject var viewModel = GameViewModel()
     
-    // Инициализируем сцену
     @State private var scene: GameScene = {
-        let scene = GameScene(size: CGSize(width: 400, height: 400))
-        scene.scaleMode = .aspectFit
+        let scene = GameScene(size: CGSize(width: 200, height: 200))
+        scene.scaleMode = .fill
         return scene
     }()
     
     var body: some View {
-        VStack {
-            SpriteView(scene: scene)
-                .frame(width: 400, height: 400)
-                .border(Color.black)
-                .onAppear {
-                    scene.viewModel = viewModel
-                }
+        ZStack {
+            BackgroundView(imageName: .bg2)
             
-            Spacer()
-            
-            // Элементы управления: стрелки и кнопка "Throw"
-            ControlPanelView(scene: scene)
+            VStack {
+                Spacer()
+                
+                SpriteView(scene: scene)
+                    .border(Color.black)
+                    .onAppear {
+                        scene.viewModel = viewModel
+                    }
+                
+                Spacer()
+                
+                // Элементы управления: стрелки и кнопка "Throw"
+                ControlPanelView(scene: scene)
+            }
+            .padding()
         }
-        .padding()
     }
 }
 
