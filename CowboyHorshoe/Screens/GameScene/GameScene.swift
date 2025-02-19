@@ -53,7 +53,7 @@ class GameScene: SKScene {
         
         // Подковы.
         for pos in viewModel.horseshoePositions {
-            let horseshoeSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.6)
+            let horseshoeSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.5)
             let hshoeTexture = SKTexture(imageNamed: ImageNames.hShoe.rawValue)
             let hshoe = SKSpriteNode(texture: hshoeTexture, size: horseshoeSize)
             hshoe.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
@@ -75,7 +75,7 @@ class GameScene: SKScene {
         
         // Столбы.
         for pos in viewModel.pillarPositions {
-            let pillarSize = CGSize(width: cellSize * 0.5, height: cellSize * 0.8)
+            let pillarSize = CGSize(width: cellSize * 0.2, height: cellSize * 0.8)
             let pillarTexture = SKTexture(imageNamed: ImageNames.pillar.rawValue)
             let pillar = SKSpriteNode(texture: pillarTexture, size: pillarSize)
             pillar.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
@@ -95,8 +95,7 @@ class GameScene: SKScene {
     
     func objectPositionFor(gridX: Int, gridY: Int) -> CGPoint {
         let basePos = positionFor(gridX: gridX, gridY: gridY)
-        // Эмпирически подбираемый сдвиг: например, при cellSize = 80, сдвиг 0.75*cellSize ≈ 60,
-        // что соответствует примеру в SwiftUI (ковбой стоит на верхней части куба).
+        // Эмпирически подбираемый сдвиг: например, при cellSize = 80, сдвиг 0.75*cellSize ≈ 60
         let objectYOffset = cellSize * 0.75
         return CGPoint(x: basePos.x, y: basePos.y + objectYOffset)
     }

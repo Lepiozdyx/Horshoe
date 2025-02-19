@@ -9,16 +9,31 @@ import SwiftUI
 
 struct TestView: View {
     var body: some View {
-        VStack(spacing: 0) {
-            Image(.gameCube)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80)
+        ZStack {
+            HStack(spacing: 0) {
+                Image(.gameCube)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80)
+                
+                Image(.gameCube)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80)
+            }
             
-            Image(.gameCube)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80)
+            HStack(spacing: 0) {
+                Image(.gameCube)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80)
+                
+                Image(.gameCube)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80)
+            }
+            .offset(x: 0, y: 45)
         }
     }
 }

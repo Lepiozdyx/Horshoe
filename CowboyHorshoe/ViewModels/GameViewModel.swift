@@ -17,7 +17,7 @@ class GameViewModel: ObservableObject {
     /// Позиции столбов.
     @Published var pillarPositions: [(x: Int, y: Int)] = [(5, 2)]
     /// Позиции препятствий (например, заборы, кактусы).
-    @Published var obstaclePositions: [(x: Int, y: Int)] = [(1, 1), (4, 4)]
+    @Published var obstaclePositions: [(x: Int, y: Int)] = [(4, 1), (5, 4)]
     /// Флаг, сигнализирующий о завершении игры.
     @Published var isGameOver: Bool = false
     /// Флаг победы (true – выигрыш, false – поражение).
