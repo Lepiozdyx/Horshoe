@@ -42,7 +42,7 @@ struct ContentView: View {
                         Spacer()
                         
                         // GameView()
-                        NavigationLink(destination: {}) {
+                        NavigationLink(destination: GameView()) {
                             Image(.start)
                                 .resizable()
                                 .scaledToFit()

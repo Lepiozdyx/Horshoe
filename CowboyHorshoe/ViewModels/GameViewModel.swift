@@ -3,160 +3,196 @@
 
 import Foundation
 
-enum Direction {
-    case up, down, left, right
-}
-
 class GameViewModel: ObservableObject {
-    // Размер игрового поля (для теста 6x6).
-    let gridSize: Int = 6
-    /// Текущая позиция игрока.
-    @Published var playerPosition: (x: Int, y: Int) = (0, 0)
-    /// Позиции подков. (Тестовый вариант — 2 подковы)
-    @Published var horseshoePositions: [(x: Int, y: Int)] = [(2, 2), (3, 4)]
-    /// Позиции столбов.
-    @Published var pillarPositions: [(x: Int, y: Int)] = [(5, 2)]
-    /// Позиции препятствий (например, заборы, кактусы).
-    @Published var obstaclePositions: [(x: Int, y: Int)] = [(4, 1), (5, 4)]
-    /// Флаг, сигнализирующий о завершении игры.
-    @Published var isGameOver: Bool = false
-    /// Флаг победы (true – выигрыш, false – поражение).
-    @Published var didWin: Bool = false
+    // MARK: - Types
     
-    /// Индексы подков, которые уже заброшены (на столб).
-    var placedHorseshoeIndices: Set<Int> = []
-    
-    // MARK: - Вспомогательные методы
-    /// Проверяет, свободна ли ячейка (x, y) для перемещения игрока.
-    func isCellFree(x: Int, y: Int) -> Bool {
-        guard x >= 0 && x < gridSize && y >= 0 && y < gridSize else { return false }
-        if obstaclePositions.contains(where: { $0.x == x && $0.y == y }) { return false }
-        if horseshoePositions.contains(where: { $0.x == x && $0.y == y }) { return false }
-        if pillarPositions.contains(where: { $0.x == x && $0.y == y }) { return false }
-        return true
+    /// Направление движения игрока
+    enum Direction {
+        case up, down, left, right
     }
     
-    /// Определяет, находится ли позиция на краю игрового поля.
-    func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
-        return pos.x == 0 || pos.x == gridSize - 1 || pos.y == 0 || pos.y == gridSize - 1
+    /// Результат броска подковы
+    struct ThrowResult {
+        /// Новые позиции всех подков
+        let newPositions: [(x: Int, y: Int)]
+        /// Флаг ухода подковы в аут
+        let isOut: Bool
+        /// Индексы подков на столбах
+        let placedHorseshoes: Set<Int>
     }
     
-    // MARK: - Перемещение игрока
-    /// Перемещает игрока в заданном направлении, если целевая ячейка свободна.
+    private enum MovementDirection {
+        case horizontal(dx: Int)
+        case vertical(dy: Int)
+    }
+    
+    // MARK: - Public Properties
+    
+    /// Размер игрового поля
+    let gridSize: Int
+    
+    /// Текущая позиция игрока
+    @Published private(set) var playerPosition: (x: Int, y: Int)
+    
+    /// Позиции подков
+    @Published private(set) var horseshoePositions: [(x: Int, y: Int)]
+    
+    /// Позиции столбов
+    let pillarPositions: [(x: Int, y: Int)]
+    
+    /// Позиции препятствий
+    let obstaclePositions: [(x: Int, y: Int)]
+    
+    // MARK: - Private Properties
+    
+    /// Индексы подков, которые уже размещены на столбах
+    private var placedHorseshoeIndices: Set<Int> = []
+    
+    // MARK: - Initialization
+    
+    init(gridSize: Int = 6,
+         playerStart: (x: Int, y: Int) = (0, 0),
+         horseshoes: [(x: Int, y: Int)] = [(2, 2), (3, 4)],
+         pillars: [(x: Int, y: Int)] = [(5, 2)],
+         obstacles: [(x: Int, y: Int)] = [(4, 1), (5, 4)]) {
+        self.gridSize = gridSize
+        self.playerPosition = playerStart
+        self.horseshoePositions = horseshoes
+        self.pillarPositions = pillars
+        self.obstaclePositions = obstacles
+    }
+    
+    // MARK: - Public Methods
+    
+    /// Перемещает игрока в указанном направлении
     func movePlayer(direction: Direction) {
-        var newX = playerPosition.x
-        var newY = playerPosition.y
+        var newPosition = playerPosition
         
         switch direction {
-        case .up: newY += 1
-        case .down: newY -= 1
-        case .left: newX -= 1
-        case .right: newX += 1
+        case .up:    newPosition.y += 1
+        case .down:  newPosition.y -= 1
+        case .left:  newPosition.x -= 1
+        case .right: newPosition.x += 1
         }
         
-        if newX >= 0 && newX < gridSize && newY >= 0 && newY < gridSize && isCellFree(x: newX, y: newY) {
-            playerPosition = (newX, newY)
+        guard isValidPosition(newPosition) && !hasObstacle(at: newPosition) else { return }
+        playerPosition = newPosition
+    }
+    
+    /// Выполняет бросок подков в соответствии с текущим положением игрока
+    func performThrow() -> ThrowResult {
+        let initialPositions = horseshoePositions
+        var isOut = false
+        var currentPlacedIndices = placedHorseshoeIndices
+        
+        // Проходим по всем подковам
+        for i in 0..<horseshoePositions.count where !placedHorseshoeIndices.contains(i) {
+            let horseshoePos = horseshoePositions[i]
+            let initialPos = initialPositions[i]
+            
+            // Определяем направление движения
+            guard let direction = getMovementDirection(from: horseshoePos) else { continue }
+            
+            // Вычисляем новую позицию
+            let newPosition = calculateNewPosition(from: horseshoePos, in: direction)
+            horseshoePositions[i] = newPosition
+            
+            // Проверяем попадание на столб
+            if isOnPillar(position: newPosition) {
+                currentPlacedIndices.insert(i)
+            }
+            
+            // Проверяем аут
+            if !isEdge(initialPos) && isEdge(newPosition) && !isOnPillar(position: newPosition) {
+                isOut = true
+            }
+        }
+        
+        placedHorseshoeIndices = currentPlacedIndices
+        
+        return ThrowResult(
+            newPositions: horseshoePositions,
+            isOut: isOut,
+            placedHorseshoes: currentPlacedIndices
+        )
+    }
+    
+    /// Проверяет, достигнута ли победа
+    func isVictory() -> Bool {
+        pillarPositions.allSatisfy { pillar in
+            placedHorseshoeIndices.contains { index in
+                let pos = horseshoePositions[index]
+                return pos.x == pillar.x && pos.y == pillar.y
+            }
         }
     }
     
-    // MARK: - Логика броска
-    /// Выполняет действие "Throw":
-    /// 1. Для каждой подковы, если она выровнена с игроком по горизонтали или вертикали,
-    ///    вычисляет ее новое положение, двигаясь по клеткам до столкновения с препятствием,
-    ///    до достижения столба или до края игрового поля.
-    /// 2. Если подкова, которая не находилась на краю, после броска оказывается на краю (и эта ячейка не соответствует столбу) – игра считается проигранной («аут»).
-    /// 3. При проверке победы учитываются только подковы, которые были заброшены на столбы.
-    func performThrow() {
-        // Сохраняем изначальные позиции подков для проверки поражения.
-        let initialHorseshoePositions = horseshoePositions
+    /// Проверяет, находится ли подкова на столбе
+    func isHorseshoePlaced(at index: Int) -> Bool {
+        placedHorseshoeIndices.contains(index)
+    }
+    
+    // MARK: - Private Methods
+    
+    /// Проверяет, находится ли позиция в пределах поля
+    private func isValidPosition(_ pos: (x: Int, y: Int)) -> Bool {
+        pos.x >= 0 && pos.x < gridSize && pos.y >= 0 && pos.y < gridSize
+    }
+    
+    /// Определяет направление движения подковы относительно игрока
+    private func getMovementDirection(from position: (x: Int, y: Int)) -> MovementDirection? {
+        if playerPosition.x == position.x {
+            let dy = playerPosition.y > position.y ? -1 : 1
+            return .vertical(dy: dy)
+        } else if playerPosition.y == position.y {
+            let dx = playerPosition.x > position.x ? -1 : 1
+            return .horizontal(dx: dx)
+        }
+        return nil
+    }
+    
+    /// Вычисляет новую позицию подковы с учетом препятствий и границ
+    private func calculateNewPosition(from start: (x: Int, y: Int),
+                                    in direction: MovementDirection) -> (x: Int, y: Int) {
+        var current = start
         
-        // Для каждого элемента проверяем, если он ещё не заброшен, то пытаемся его переместить.
-        for i in 0..<horseshoePositions.count {
-            // Если подкова уже заброшена (на столб), пропускаем её.
-            if placedHorseshoeIndices.contains(i) { continue }
+        switch direction {
+        case .horizontal(let dx):
+            while true {
+                let nextX = current.x + dx
+                guard isValidPosition((nextX, current.y)) else { break }
+                guard !hasObstacle(at: (nextX, current.y)) else { break }
+                
+                current.x = nextX
+                if isOnPillar(position: current) { break }
+            }
             
-            let horseshoePos = horseshoePositions[i]
-            // Вертикальное выравнивание.
-            if playerPosition.x == horseshoePos.x {
-                var directionY = 0
-                if playerPosition.y > horseshoePos.y {
-                    directionY = -1  // Игрок выше подковы → движение вниз.
-                } else if playerPosition.y < horseshoePos.y {
-                    directionY = 1   // Игрок ниже подковы → движение вверх.
-                } else {
-                    continue
-                }
+        case .vertical(let dy):
+            while true {
+                let nextY = current.y + dy
+                guard isValidPosition((current.x, nextY)) else { break }
+                guard !hasObstacle(at: (current.x, nextY)) else { break }
                 
-                var newY = horseshoePos.y
-                while true {
-                    let nextY = newY + directionY
-                    // Если следующая ячейка за пределами поля — прекращаем.
-                    if nextY < 0 || nextY >= gridSize { break }
-                    // Если в следующей ячейке есть препятствие — останавливаемся перед ним.
-                    if obstaclePositions.contains(where: { $0.x == horseshoePos.x && $0.y == nextY }) { break }
-                    newY = nextY
-                    // Если достигли столба, завершаем движение.
-                    if pillarPositions.contains(where: { $0.x == horseshoePos.x && $0.y == nextY }) {
-                        break
-                    }
-                }
-                horseshoePositions[i] = (horseshoePos.x, newY)
-                if pillarPositions.contains(where: { $0.x == horseshoePos.x && $0.y == newY }) {
-                    placedHorseshoeIndices.insert(i)
-                }
-            }
-            // Горизонтальное выравнивание.
-            else if playerPosition.y == horseshoePos.y {
-                var directionX = 0
-                if playerPosition.x > horseshoePos.x {
-                    directionX = -1  // Игрок справа от подковы → движение влево.
-                } else if playerPosition.x < horseshoePos.x {
-                    directionX = 1   // Игрок слева от подковы → движение вправо.
-                } else {
-                    continue
-                }
-                
-                var newX = horseshoePos.x
-                while true {
-                    let nextX = newX + directionX
-                    if nextX < 0 || nextX >= gridSize { break }
-                    if obstaclePositions.contains(where: { $0.x == nextX && $0.y == horseshoePos.y }) { break }
-                    newX = nextX
-                    if pillarPositions.contains(where: { $0.x == nextX && $0.y == horseshoePos.y }) {
-                        break
-                    }
-                }
-                horseshoePositions[i] = (newX, horseshoePos.y)
-                if pillarPositions.contains(where: { $0.x == newX && $0.y == horseshoePos.y }) {
-                    placedHorseshoeIndices.insert(i)
-                }
+                current.y = nextY
+                if isOnPillar(position: current) { break }
             }
         }
         
-        // Проверяем условие поражения (аут):
-        // Если подкова, которая изначально не находилась на краю, после броска оказывается в крайней ячейке
-        // (и эта ячейка не соответствует столбу) – игра проиграна.
-        for i in 0..<horseshoePositions.count {
-            let initial = initialHorseshoePositions[i]
-            let final = horseshoePositions[i]
-            if !isEdge(initial) && isEdge(final) && !pillarPositions.contains(where: { $0.x == final.x && $0.y == final.y }) {
-                isGameOver = true
-                didWin = false
-                return
-            }
-        }
-        
-        // Проверяем условие победы:
-        // Для каждого столба должна быть найдена хотя бы одна заброшенная подкова.
-        let coveredGoals = pillarPositions.filter { goal in
-            placedHorseshoeIndices.contains { index in
-                horseshoePositions[index].x == goal.x && horseshoePositions[index].y == goal.y
-            }
-        }
-        if coveredGoals.count == pillarPositions.count {
-            didWin = true
-            isGameOver = true
-        }
+        return current
+    }
+    
+    /// Проверяет наличие препятствия в указанной позиции
+    private func hasObstacle(at position: (x: Int, y: Int)) -> Bool {
+        obstaclePositions.contains { $0.x == position.x && $0.y == position.y }
+    }
+    
+    /// Проверяет, находится ли позиция на столбе
+    private func isOnPillar(position: (x: Int, y: Int)) -> Bool {
+        pillarPositions.contains { $0.x == position.x && $0.y == position.y }
+    }
+    
+    /// Проверяет, находится ли позиция на краю поля
+    private func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
+        pos.x == 0 || pos.x == gridSize - 1 || pos.y == 0 || pos.y == gridSize - 1
     }
 }
-
