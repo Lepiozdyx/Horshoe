@@ -7,26 +7,64 @@ class GameScene: SKScene {
     // Ссылка на модель игры.
     var viewModel: GameViewModel!
     
-    // Вычисляемый размер ячейки на основе gridSize.
+    // Размер игрового поля (фиксированный размер для размещения сетки в центре)
+    let boardSize: CGFloat = 600
+    
+    // Контейнер для игрового поля (сетка, объекты)
+    let boardNode = SKNode()
+    
+    // Вычисляемый размер ячейки по фиксированному размеру игрового поля.
     var cellSize: CGFloat {
-        return size.width / CGFloat(viewModel.gridSize)
+        return boardSize / CGFloat(viewModel.gridSize)
     }
     
     var playerNode: SKSpriteNode!
     var horseshoeNodes: [SKSpriteNode] = []
     var obstacleNodes: [SKSpriteNode] = []
-    var pillarNodes: [SKSpriteNode] = []  // Для нескольких столбов.
+    var pillarNodes: [SKSpriteNode] = []
     
     // Счётчик завершённых анимаций подков.
     var animationsCompleted = 0
     
     override func didMove(to view: SKView) {
-        backgroundColor = .white
+        // Устанавливаем anchorPoint так, чтобы (0,0) была в центре сцены.
+        anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        
+        // Добавляем фоновый узел, который занимает всю сцену.
+        let bgTexture = SKTexture(imageNamed: "bg2")
+        let bgNode = SKSpriteNode(texture: bgTexture)
+        bgNode.size = self.size  // фоновый узел по размеру сцены
+        bgNode.position = CGPoint(x: 0, y: 0)
+        bgNode.zPosition = -100
+        addChild(bgNode)
+        
+        // Добавляем контейнер для игрового поля и центрируем его.
+        boardNode.position = CGPoint(x: 0, y: 0)
+        boardNode.zPosition = 0
+        addChild(boardNode)
+        
         setupBackgroundGrid()
         setupNodes()
     }
     
-    // Отрисовка сетки.
+    // Функция для вычисления позиции ячейки относительно boardNode.
+    func positionFor(gridX: Int, gridY: Int) -> CGPoint {
+        let gridCount = viewModel.gridSize
+        let totalWidth = boardSize
+        let totalHeight = boardSize
+        let offsetX = -totalWidth / 2
+        let offsetY = -totalHeight / 2
+        let xPos = offsetX + CGFloat(gridX) * cellSize + cellSize/2
+        let yPos = offsetY + CGFloat(gridY) * cellSize + cellSize/2
+        return CGPoint(x: xPos, y: yPos)
+    }
+    
+    // Если не требуется дополнительное смещение, можно вернуть позицию ячейки.
+    func objectPositionFor(gridX: Int, gridY: Int) -> CGPoint {
+        return positionFor(gridX: gridX, gridY: gridY)
+    }
+    
+    // Отрисовка сетки ячеек внутри boardNode.
     func setupBackgroundGrid() {
         let gridCount = viewModel.gridSize
         let cubeTexture = SKTexture(imageNamed: ImageNames.gameCube.rawValue)
@@ -36,12 +74,12 @@ class GameScene: SKScene {
                 let cubeNode = SKSpriteNode(texture: cubeTexture, size: CGSize(width: cellSize, height: cellSize))
                 cubeNode.position = positionFor(gridX: x, gridY: y)
                 cubeNode.zPosition = -1
-                addChild(cubeNode)
+                boardNode.addChild(cubeNode)
             }
         }
     }
     
-    // Создание узлов для игрока, подков, препятствий и столбов.
+    // Создание узлов для игрока, подков, препятствий и столбов – добавляем их в boardNode.
     func setupNodes() {
         // Ковбой (игрок)
         let playerSize = CGSize(width: cellSize * 0.8, height: cellSize * 0.8)
@@ -49,7 +87,7 @@ class GameScene: SKScene {
         playerNode = SKSpriteNode(texture: playerTexture, size: playerSize)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x, gridY: viewModel.playerPosition.y)
         playerNode.zPosition = 1
-        addChild(playerNode)
+        boardNode.addChild(playerNode)
         
         // Подковы.
         for pos in viewModel.horseshoePositions {
@@ -58,7 +96,7 @@ class GameScene: SKScene {
             let hshoe = SKSpriteNode(texture: hshoeTexture, size: horseshoeSize)
             hshoe.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
             hshoe.zPosition = 1
-            addChild(hshoe)
+            boardNode.addChild(hshoe)
             horseshoeNodes.append(hshoe)
         }
         
@@ -69,7 +107,7 @@ class GameScene: SKScene {
             let obstacle = SKSpriteNode(texture: obstacleTexture, size: obstacleSize)
             obstacle.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
             obstacle.zPosition = 1
-            addChild(obstacle)
+            boardNode.addChild(obstacle)
             obstacleNodes.append(obstacle)
         }
         
@@ -80,46 +118,25 @@ class GameScene: SKScene {
             let pillar = SKSpriteNode(texture: pillarTexture, size: pillarSize)
             pillar.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
             pillar.zPosition = 1
-            addChild(pillar)
+            boardNode.addChild(pillar)
             pillarNodes.append(pillar)
         }
     }
-
     
-    /// Преобразует координаты ячейки в позицию центра на сцене.
-    func positionFor(gridX: Int, gridY: Int) -> CGPoint {
-        let xPos = CGFloat(gridX) * cellSize + cellSize / 2
-        let yPos = CGFloat(gridY) * cellSize + cellSize / 2
-        return CGPoint(x: xPos, y: yPos)
-    }
+    // Остальные методы (перемещения, анимация броска, проверка завершения) остаются без изменений,
+    // однако их анимации также должны обновлять позицию объектов в пределах boardNode.
     
-    func objectPositionFor(gridX: Int, gridY: Int) -> CGPoint {
-        let basePos = positionFor(gridX: gridX, gridY: gridY)
-        // Эмпирически подбираемый сдвиг: например, при cellSize = 80, сдвиг 0.75*cellSize ≈ 60
-        let objectYOffset = cellSize * 0.75
-        return CGPoint(x: basePos.x, y: basePos.y + objectYOffset)
-    }
-    
-    // Метод перемещения игрока.
     func movePlayer(direction: Direction) {
         viewModel.movePlayer(direction: direction)
         let newPlayerPos = objectPositionFor(gridX: viewModel.playerPosition.x, gridY: viewModel.playerPosition.y)
         playerNode.run(SKAction.move(to: newPlayerPos, duration: 0.2))
     }
     
-    /// Выполняет анимацию броска подков:
-    /// - Сохраняет начальные позиции подков.
-    /// - Вызывает логику броска в модели.
-    /// - Анимирует перемещение каждой подковы по вычисленному пути.
-    /// - После завершения всех анимаций проверяет, достигнут ли выигрыш/проигрыш, и выводит оверлей.
     func performThrow() {
         animationsCompleted = 0
-        // Сохраняем изначальные позиции подков.
         let initialPositions = viewModel.horseshoePositions
-        // Вызываем логику броска.
         viewModel.performThrow()
         
-        // Анимация движения каждой подковы.
         for (index, hshoeNode) in horseshoeNodes.enumerated() {
             let initial = initialPositions[index]
             let final = viewModel.horseshoePositions[index]
@@ -147,7 +164,6 @@ class GameScene: SKScene {
             let sequence = SKAction.sequence(actions)
             hshoeNode.run(sequence, completion: { [weak self] in
                 guard let self = self else { return }
-                // Если подкова достигла столба, можно изменить внешний вид (например, наложить зеленую заливку).
                 if self.viewModel.pillarPositions.contains(where: { $0.x == final.x && $0.y == final.y }) {
                     hshoeNode.color = .green
                     hshoeNode.colorBlendFactor = 0.5
@@ -164,22 +180,20 @@ class GameScene: SKScene {
         }
     }
     
-    // Проверка состояния игры и вывод оверлея при окончании.
     func checkGameOver() {
         if viewModel.isGameOver {
             let message = viewModel.didWin ? "Win!" : "Loose!"
             presentGameOver(message: message)
         }
     }
-
-    // Отображение оверлея с сообщением о завершении уровня.
+    
     func presentGameOver(message: String) {
-        let overlay = SKShapeNode(rectOf: CGSize(width: size.width * 0.8, height: size.height * 0.4), cornerRadius: 20)
+        let overlay = SKShapeNode(rectOf: CGSize(width: boardSize * 0.8, height: boardSize * 0.4), cornerRadius: 20)
         overlay.fillColor = .black
         overlay.alpha = 0.7
-        overlay.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        overlay.position = CGPoint(x: 0, y: 0)
         overlay.zPosition = 200
-        addChild(overlay)
+        boardNode.addChild(overlay)
         
         let label = SKLabelNode(text: message)
         label.fontName = "Helvetica-Bold"

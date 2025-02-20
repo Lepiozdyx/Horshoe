@@ -23,6 +23,9 @@ class GameViewModel: ObservableObject {
     /// Флаг победы (true – выигрыш, false – поражение).
     @Published var didWin: Bool = false
     
+    /// Индексы подков, которые уже заброшены (на столб).
+    var placedHorseshoeIndices: Set<Int> = []
+    
     // MARK: - Вспомогательные методы
     /// Проверяет, свободна ли ячейка (x, y) для перемещения игрока.
     func isCellFree(x: Int, y: Int) -> Bool {
@@ -34,7 +37,7 @@ class GameViewModel: ObservableObject {
     }
     
     /// Определяет, находится ли позиция на краю игрового поля.
-    private func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
+    func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
         return pos.x == 0 || pos.x == gridSize - 1 || pos.y == 0 || pos.y == gridSize - 1
     }
     
@@ -61,14 +64,17 @@ class GameViewModel: ObservableObject {
     /// 1. Для каждой подковы, если она выровнена с игроком по горизонтали или вертикали,
     ///    вычисляет ее новое положение, двигаясь по клеткам до столкновения с препятствием,
     ///    до достижения столба или до края игрового поля.
-    /// 2. Если подкова, которая **не** стартовала на краю, оказывается на краю (и эта ячейка не является столбом) – игра считается проигранной («аут»).
-    /// 3. Если в каждой ячейке столбов находится подкова – игра выиграна.
+    /// 2. Если подкова, которая не находилась на краю, после броска оказывается на краю (и эта ячейка не соответствует столбу) – игра считается проигранной («аут»).
+    /// 3. При проверке победы учитываются только подковы, которые были заброшены на столбы.
     func performThrow() {
         // Сохраняем изначальные позиции подков для проверки поражения.
         let initialHorseshoePositions = horseshoePositions
         
-        // Для каждого мяча вычисляем новое положение.
+        // Для каждого элемента проверяем, если он ещё не заброшен, то пытаемся его переместить.
         for i in 0..<horseshoePositions.count {
+            // Если подкова уже заброшена (на столб), пропускаем её.
+            if placedHorseshoeIndices.contains(i) { continue }
+            
             let horseshoePos = horseshoePositions[i]
             // Вертикальное выравнивание.
             if playerPosition.x == horseshoePos.x {
@@ -95,6 +101,9 @@ class GameViewModel: ObservableObject {
                     }
                 }
                 horseshoePositions[i] = (horseshoePos.x, newY)
+                if pillarPositions.contains(where: { $0.x == horseshoePos.x && $0.y == newY }) {
+                    placedHorseshoeIndices.insert(i)
+                }
             }
             // Горизонтальное выравнивание.
             else if playerPosition.y == horseshoePos.y {
@@ -118,6 +127,9 @@ class GameViewModel: ObservableObject {
                     }
                 }
                 horseshoePositions[i] = (newX, horseshoePos.y)
+                if pillarPositions.contains(where: { $0.x == newX && $0.y == horseshoePos.y }) {
+                    placedHorseshoeIndices.insert(i)
+                }
             }
         }
         
@@ -135,9 +147,11 @@ class GameViewModel: ObservableObject {
         }
         
         // Проверяем условие победы:
-        // Для каждого столба должна быть найдена хотя бы одна подкова в соответствующей ячейке.
+        // Для каждого столба должна быть найдена хотя бы одна заброшенная подкова.
         let coveredGoals = pillarPositions.filter { goal in
-            horseshoePositions.contains { ball in ball.x == goal.x && ball.y == goal.y }
+            placedHorseshoeIndices.contains { index in
+                horseshoePositions[index].x == goal.x && horseshoePositions[index].y == goal.y
+            }
         }
         if coveredGoals.count == pillarPositions.count {
             didWin = true
@@ -145,3 +159,4 @@ class GameViewModel: ObservableObject {
         }
     }
 }
+
