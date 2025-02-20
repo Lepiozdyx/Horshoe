@@ -5,26 +5,25 @@ import SwiftUI
 import SpriteKit
 
 struct GameView: View {
-    @StateObject var viewModel = GameViewModel()
     
+    @StateObject var viewModel = GameViewModel()
     @State private var scene: GameScene = {
-        let scene = GameScene(size: CGSize(width: 600, height: 600))
-        scene.scaleMode = .fill
+        let scene = GameScene(size: UIScreen.main.bounds.size)
+        scene.scaleMode = .aspectFit
         return scene
     }()
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack(alignment: .bottom) {
-                SpriteView(scene: scene)
-//                    .frame(width: geometry.size.width, height: geometry.size.height)
-                    .ignoresSafeArea()
-                
-                ControlPanelView(scene: scene)
-            }
-            .onAppear {
-                scene.viewModel = viewModel
-            }
+        ZStack(alignment: .bottom) {
+            SpriteView(scene: scene)
+                .ignoresSafeArea()
+            
+            ControlPanelView(scene: scene)
+                .padding(.horizontal)
+                .padding(.bottom, 20)
+        }
+        .onAppear {
+            scene.viewModel = viewModel
         }
     }
 }

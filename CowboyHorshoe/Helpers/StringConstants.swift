@@ -12,4 +12,5 @@ enum ImageNames: String {
     case fence
     case level
     case pause
+    case bg2
 }
