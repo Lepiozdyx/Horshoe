@@ -21,6 +21,11 @@ class GameScene: SKScene {
         return cellSize * 0.55
     }
     
+    // Вычисляем реальную высоту поля с учетом нахлеста
+    var actualBoardHeight: CGFloat {
+        return cellSize + (cellSize - cellOverlap) * CGFloat(viewModel.gridSize - 1)
+    }
+    
     var playerNode: SKSpriteNode!
     var horseshoeNodes: [SKSpriteNode] = []
     var obstacleNodes: [SKSpriteNode] = []
@@ -37,7 +42,9 @@ class GameScene: SKScene {
         bgNode.zPosition = -100
         addChild(bgNode)
         
-        boardNode.position = CGPoint(x: 0, y: 0)
+        // Центрируем boardNode с учетом реальной высоты поля
+        let verticalOffset = (boardSize - actualBoardHeight) / 2
+        boardNode.position = CGPoint(x: 0, y: verticalOffset)
         boardNode.zPosition = 0
         addChild(boardNode)
         
@@ -47,8 +54,8 @@ class GameScene: SKScene {
     
     func positionFor(gridX: Int, gridY: Int) -> CGPoint {
         let offsetX = -boardSize / 2
-        // Смещаем базовую позицию Y вниз на половину высоты поля
-        let offsetY = -boardSize / 2
+        // Начинаем построение снизу, смещая базовую точку вниз на половину реальной высоты поля
+        let offsetY = -actualBoardHeight / 2
         
         let xPos = offsetX + CGFloat(gridX) * cellSize + cellSize / 2
         // Добавляем нахлест для каждой следующей строки
@@ -83,7 +90,7 @@ class GameScene: SKScene {
     
     func setupNodes() {
         // Ковбой
-        let playerSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.8)
+        let playerSize = CGSize(width: cellSize * 0.5, height: cellSize * 0.8)
         let playerTexture = SKTexture(imageNamed: ImageNames.cowboy.rawValue)
         playerNode = SKSpriteNode(texture: playerTexture, size: playerSize)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x, gridY: viewModel.playerPosition.y)
@@ -93,7 +100,7 @@ class GameScene: SKScene {
         
         // Подковы
         for pos in viewModel.horseshoePositions {
-            let horseshoeSize = CGSize(width: cellSize * 0.5, height: cellSize * 0.5)
+            let horseshoeSize = CGSize(width: cellSize * 0.45, height: cellSize * 0.5)
             let hshoeTexture = SKTexture(imageNamed: ImageNames.hShoe.rawValue)
             let hshoe = SKSpriteNode(texture: hshoeTexture, size: horseshoeSize)
             hshoe.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
@@ -104,7 +111,7 @@ class GameScene: SKScene {
         
         // Препятствия
         for pos in viewModel.obstaclePositions {
-            let obstacleSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.7)
+            let obstacleSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.65)
             let obstacleTexture = SKTexture(imageNamed: Int.random(in: 0...1) == 0 ? ImageNames.cactus.rawValue : ImageNames.fence.rawValue)
             let obstacle = SKSpriteNode(texture: obstacleTexture, size: obstacleSize)
             obstacle.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
@@ -115,7 +122,7 @@ class GameScene: SKScene {
         
         // Столбы
         for pos in viewModel.pillarPositions {
-            let pillarSize = CGSize(width: cellSize * 0.2, height: cellSize * 0.8)
+            let pillarSize = CGSize(width: cellSize * 0.2, height: cellSize * 0.7)
             let pillarTexture = SKTexture(imageNamed: ImageNames.pillar.rawValue)
             let pillar = SKSpriteNode(texture: pillarTexture, size: pillarSize)
             pillar.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
