@@ -88,12 +88,33 @@ class GameScene: SKScene {
         
         let initialPositions = viewModel.horseshoePositions
         let throwResult = viewModel.performThrow()
+        var movingHorseshoes = 0
+        var completedAnimations = 0
         
-        var animationsRemaining = horseshoeNodes.count
+        // Подсчитываем количество подков, которые должны двигаться
+        for (index, _) in horseshoeNodes.enumerated() {
+            let initial = initialPositions[index]
+            let final = throwResult.newPositions[index]
+            if initial != final {
+                movingHorseshoes += 1
+            }
+        }
         
+        // Если нет движущихся подков, сразу проверяем результат
+        if movingHorseshoes == 0 {
+            handleThrowResult(throwResult)
+            return
+        }
+        
+        // Анимируем движущиеся подковы
         for (index, hshoeNode) in horseshoeNodes.enumerated() {
-            let path = calculatePath(from: initialPositions[index],
-                                   to: throwResult.newPositions[index])
+            let initial = initialPositions[index]
+            let final = throwResult.newPositions[index]
+            
+            // Пропускаем неподвижные подковы
+            guard initial != final else { continue }
+            
+            let path = calculatePath(from: initial, to: final)
             
             animateHorseshoe(hshoeNode, along: path) { [weak self] in
                 guard let self = self else { return }
@@ -102,9 +123,10 @@ class GameScene: SKScene {
                     self.highlightHorseshoe(hshoeNode)
                 }
                 
-                animationsRemaining -= 1
+                completedAnimations += 1
                 
-                if animationsRemaining == 0 {
+                // Проверяем результат после завершения всех анимаций
+                if completedAnimations == movingHorseshoes {
                     self.handleThrowResult(throwResult)
                 }
             }
@@ -276,10 +298,18 @@ class GameScene: SKScene {
     }
     
     private func handleThrowResult(_ result: GameViewModel.ThrowResult) {
-        if result.isOut {
+        print("\n📍 Проверка результата броска:")
+        
+        if viewModel.isGameLost {
+            print("❌ ПОРАЖЕНИЕ: Подкова вышла за пределы поля")
             presentGameOver(message: "Loose!")
         } else if viewModel.isVictory() {
+            print("🏆 ПОБЕДА: Все столбы заняты подковами")
             presentGameOver(message: "Win!")
+        } else {
+            print("🎮 Игра продолжается...")
+            print("- Подковы на столбах: \(result.placedHorseshoes.count)")
+            print("- Всего столбов: \(viewModel.pillarPositions.count)")
         }
     }
     

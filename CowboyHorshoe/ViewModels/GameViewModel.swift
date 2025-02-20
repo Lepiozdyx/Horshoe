@@ -37,6 +37,9 @@ class GameViewModel: ObservableObject {
     /// Позиции подков
     @Published private(set) var horseshoePositions: [(x: Int, y: Int)]
     
+    /// Флаг, показывающий что хотя бы одна подкова в ауте
+    @Published private(set) var isGameLost = false
+    
     /// Позиции столбов
     let pillarPositions: [(x: Int, y: Int)]
     
@@ -82,37 +85,42 @@ class GameViewModel: ObservableObject {
     /// Выполняет бросок подков в соответствии с текущим положением игрока
     func performThrow() -> ThrowResult {
         let initialPositions = horseshoePositions
-        var isOut = false
+        var isOutThisThrow = false
         var currentPlacedIndices = placedHorseshoeIndices
         
-        // Проходим по всем подковам
         for i in 0..<horseshoePositions.count where !placedHorseshoeIndices.contains(i) {
             let horseshoePos = horseshoePositions[i]
             let initialPos = initialPositions[i]
             
-            // Определяем направление движения
             guard let direction = getMovementDirection(from: horseshoePos) else { continue }
             
-            // Вычисляем новую позицию
             let newPosition = calculateNewPosition(from: horseshoePos, in: direction)
             horseshoePositions[i] = newPosition
             
             // Проверяем попадание на столб
             if isOnPillar(position: newPosition) {
                 currentPlacedIndices.insert(i)
+                print("🎯 Подкова \(i) попала на столб в позиции \(newPosition)")
+                print("📊 Всего подков на столбах: \(currentPlacedIndices.count) из \(pillarPositions.count) необходимых")
             }
             
             // Проверяем аут
             if !isEdge(initialPos) && isEdge(newPosition) && !isOnPillar(position: newPosition) {
-                isOut = true
+                isOutThisThrow = true
+                isGameLost = true
+                print("❌ Подкова \(i) ушла в аут! Начальная позиция: \(initialPos), конечная: \(newPosition)")
             }
         }
         
         placedHorseshoeIndices = currentPlacedIndices
         
+        if isVictory() {
+            print("🏆 ПОБЕДА! Все столбы (\(pillarPositions.count)) заняты подковами")
+        }
+        
         return ThrowResult(
             newPositions: horseshoePositions,
-            isOut: isOut,
+            isOut: isOutThisThrow,
             placedHorseshoes: currentPlacedIndices
         )
     }
@@ -130,6 +138,13 @@ class GameViewModel: ObservableObject {
     /// Проверяет, находится ли подкова на столбе
     func isHorseshoePlaced(at index: Int) -> Bool {
         placedHorseshoeIndices.contains(index)
+    }
+    
+    /// Сброс состояния игры
+    func resetGame() {
+        isGameLost = false
+        placedHorseshoeIndices.removeAll()
+        // Здесь также можно добавить сброс других состояний если потребуется
     }
     
     // MARK: - Private Methods
