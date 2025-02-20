@@ -65,7 +65,7 @@ class GameScene: SKScene {
         // Препятствия.
         for pos in viewModel.obstaclePositions {
             let obstacleSize = CGSize(width: cellSize, height: cellSize)
-            let obstacleTexture = SKTexture(imageNamed: ImageNames.cactus.rawValue)
+            let obstacleTexture = SKTexture(imageNamed: Int.random(in: 0...1) == 0 ? ImageNames.cactus.rawValue : ImageNames.fence.rawValue)
             let obstacle = SKSpriteNode(texture: obstacleTexture, size: obstacleSize)
             obstacle.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
             obstacle.zPosition = 1
