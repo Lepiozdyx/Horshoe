@@ -4,34 +4,32 @@
 import SpriteKit
 
 class GameScene: SKScene {
-    // Ссылка на модель игры.
     var viewModel: GameViewModel!
     
-    // Размер игрового поля (фиксированный размер для размещения сетки в центре)
     var boardSize: CGFloat {
         return min(size.width, size.height) * 0.8
     }
     
-    // Контейнер для игрового поля (сетка, объекты)
     let boardNode = SKNode()
     
-    // Вычисляемый размер ячейки по фиксированному размеру игрового поля.
     var cellSize: CGFloat {
         return boardSize / CGFloat(viewModel.gridSize)
+    }
+    
+    // Высота перекрытия ячеек (половина высоты ячейки)
+    var cellOverlap: CGFloat {
+        return cellSize * 0.55
     }
     
     var playerNode: SKSpriteNode!
     var horseshoeNodes: [SKSpriteNode] = []
     var obstacleNodes: [SKSpriteNode] = []
     var pillarNodes: [SKSpriteNode] = []
-    
-    // Счётчик завершённых анимаций подков.
     var animationsCompleted = 0
     
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         
-        // Фоновый узел, занимающий всю сцену (фон из ассета .bg2)
         let bgTexture = SKTexture(imageNamed: ImageNames.bg2.rawValue)
         let bgNode = SKSpriteNode(texture: bgTexture)
         bgNode.size = self.size
@@ -39,7 +37,6 @@ class GameScene: SKScene {
         bgNode.zPosition = -100
         addChild(bgNode)
         
-        // Добавляем фиксированный контейнер для игрового поля и центрируем его
         boardNode.position = CGPoint(x: 0, y: 0)
         boardNode.zPosition = 0
         addChild(boardNode)
@@ -48,81 +45,85 @@ class GameScene: SKScene {
         setupNodes()
     }
     
-    // Преобразование координат для ячеек относительно boardNode
     func positionFor(gridX: Int, gridY: Int) -> CGPoint {
         let offsetX = -boardSize / 2
+        // Смещаем базовую позицию Y вниз на половину высоты поля
         let offsetY = -boardSize / 2
+        
         let xPos = offsetX + CGFloat(gridX) * cellSize + cellSize / 2
-        let yPos = offsetY + CGFloat(gridY) * cellSize + cellSize / 2
+        // Добавляем нахлест для каждой следующей строки
+        let yPos = offsetY + CGFloat(gridY) * (cellSize - cellOverlap) + cellSize / 2
+        
         return CGPoint(x: xPos, y: yPos)
     }
     
-    // Смещение элементов относительно центра ячейки
     func objectPositionFor(gridX: Int, gridY: Int) -> CGPoint {
-        let base = positionFor(gridX: gridX, gridY: gridY)
-        let objectYOffset = cellSize / 2
-        return CGPoint(x: base.x, y: base.y + objectYOffset)
+        let basePosition = positionFor(gridX: gridX, gridY: gridY)
+        // Смещаем объекты вверх для размещения их на поверхности ячейки
+        return CGPoint(x: basePosition.x, y: basePosition.y + cellSize / 2)
     }
     
-    // Пример отрисовки сетки в boardNode
     func setupBackgroundGrid() {
         let cubeTexture = SKTexture(imageNamed: ImageNames.gameCube.rawValue)
-        for x in 0..<viewModel.gridSize {
-            for y in 0..<viewModel.gridSize {
+        
+        // Отрисовываем сетку снизу вверх для правильного наложения
+        for y in (0..<viewModel.gridSize).reversed() {
+            for x in 0..<viewModel.gridSize {
                 let cubeNode = SKSpriteNode(texture: cubeTexture, size: CGSize(width: cellSize, height: cellSize))
                 cubeNode.position = positionFor(gridX: x, gridY: y)
-                cubeNode.zPosition = -1
+                
+                // Устанавливаем zPosition в зависимости от положения ячейки
+                // Нижние ячейки должны быть впереди верхних
+                cubeNode.zPosition = CGFloat(viewModel.gridSize - y)
+                
                 boardNode.addChild(cubeNode)
             }
         }
     }
     
-    // Создание узлов для игрока, подков, препятствий и столбов – добавляем их в boardNode.
     func setupNodes() {
-        // Ковбой (игрок)
+        // Ковбой
         let playerSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.8)
         let playerTexture = SKTexture(imageNamed: ImageNames.cowboy.rawValue)
         playerNode = SKSpriteNode(texture: playerTexture, size: playerSize)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x, gridY: viewModel.playerPosition.y)
-        playerNode.zPosition = 1
+        // Игровые объекты должны быть впереди всех ячеек
+        playerNode.zPosition = CGFloat(viewModel.gridSize + 1)
         boardNode.addChild(playerNode)
         
-        // Подковы.
+        // Подковы
         for pos in viewModel.horseshoePositions {
             let horseshoeSize = CGSize(width: cellSize * 0.5, height: cellSize * 0.5)
             let hshoeTexture = SKTexture(imageNamed: ImageNames.hShoe.rawValue)
             let hshoe = SKSpriteNode(texture: hshoeTexture, size: horseshoeSize)
             hshoe.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
-            hshoe.zPosition = 1
+            hshoe.zPosition = CGFloat(viewModel.gridSize + 1)
             boardNode.addChild(hshoe)
             horseshoeNodes.append(hshoe)
         }
         
-        // Препятствия.
+        // Препятствия
         for pos in viewModel.obstaclePositions {
             let obstacleSize = CGSize(width: cellSize * 0.6, height: cellSize * 0.7)
             let obstacleTexture = SKTexture(imageNamed: Int.random(in: 0...1) == 0 ? ImageNames.cactus.rawValue : ImageNames.fence.rawValue)
             let obstacle = SKSpriteNode(texture: obstacleTexture, size: obstacleSize)
             obstacle.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
-            obstacle.zPosition = 1
+            obstacle.zPosition = CGFloat(viewModel.gridSize + 1)
             boardNode.addChild(obstacle)
             obstacleNodes.append(obstacle)
         }
         
-        // Столбы.
+        // Столбы
         for pos in viewModel.pillarPositions {
             let pillarSize = CGSize(width: cellSize * 0.2, height: cellSize * 0.8)
             let pillarTexture = SKTexture(imageNamed: ImageNames.pillar.rawValue)
             let pillar = SKSpriteNode(texture: pillarTexture, size: pillarSize)
             pillar.position = objectPositionFor(gridX: pos.x, gridY: pos.y)
-            pillar.zPosition = 1
+            pillar.zPosition = CGFloat(viewModel.gridSize + 1)
             boardNode.addChild(pillar)
             pillarNodes.append(pillar)
         }
     }
-    
-    // Остальные методы (перемещения, анимация броска, проверка завершения) остаются без изменений,
-    // однако их анимации также должны обновлять позицию объектов в пределах boardNode.
     
     func movePlayer(direction: Direction) {
         viewModel.movePlayer(direction: direction)
@@ -160,7 +161,7 @@ class GameScene: SKScene {
             }
             
             let sequence = SKAction.sequence(actions)
-            hshoeNode.run(sequence, completion: { [weak self] in
+            hshoeNode.run(sequence) { [weak self] in
                 guard let self = self else { return }
                 if self.viewModel.pillarPositions.contains(where: { $0.x == final.x && $0.y == final.y }) {
                     hshoeNode.color = .green
@@ -170,7 +171,7 @@ class GameScene: SKScene {
                 if self.animationsCompleted == self.horseshoeNodes.count {
                     self.checkGameOver()
                 }
-            })
+            }
         }
         
         if horseshoeNodes.isEmpty {
