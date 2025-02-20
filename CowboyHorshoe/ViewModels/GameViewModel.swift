@@ -78,7 +78,18 @@ class GameViewModel: ObservableObject {
         case .right: newPosition.x += 1
         }
         
-        guard isValidPosition(newPosition) && !hasObstacle(at: newPosition) else { return }
+        // Проверяем что новая позиция:
+        // - в пределах поля
+        // - не занята препятствием
+        // - не занята столбом
+        // - не занята подковой
+        guard isValidPosition(newPosition) &&
+                !hasObstacle(at: newPosition) &&
+                !isOnPillar(position: newPosition) &&
+                !isHorseshoeAt(position: newPosition) else {
+            return
+        }
+        
         playerPosition = newPosition
     }
     
@@ -148,6 +159,11 @@ class GameViewModel: ObservableObject {
     }
     
     // MARK: - Private Methods
+    
+    // Добавляем вспомогательный метод для проверки подковы
+    private func isHorseshoeAt(position: (x: Int, y: Int)) -> Bool {
+        horseshoePositions.contains { $0.x == position.x && $0.y == position.y }
+    }
     
     /// Проверяет, находится ли позиция в пределах поля
     private func isValidPosition(_ pos: (x: Int, y: Int)) -> Bool {
