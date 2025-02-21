@@ -13,6 +13,7 @@ struct EndgameView: View {
     
     let goToMenuAction: () -> ()
     let tryAgainAction: () -> ()
+    let nextLvlAction: () -> ()
     
     var body: some View {
         ZStack {
@@ -22,9 +23,9 @@ struct EndgameView: View {
                 Image(.underlay5)
                     .resizable()
                     .frame(maxWidth: 400, maxHeight: 400)
-                    .overlay(alignment: .topTrailing) {
-                        XmarkButtonView()
-                    }
+//                    .overlay(alignment: .topTrailing) {
+//                        XmarkButtonView()
+//                    }
                     .overlay(alignment: .top) {
                         Image(isVictory ? .win : .lose)
                             .resizable()
@@ -61,7 +62,11 @@ struct EndgameView: View {
                         }
                         
                         Button {
-                            tryAgainAction()
+                            if isVictory {
+                                nextLvlAction()
+                            } else {
+                                tryAgainAction()
+                            }
                         } label: {
                             Image(isVictory ? .next : .tryAgain)
                                 .resizable()
@@ -77,5 +82,5 @@ struct EndgameView: View {
 }
 
 #Preview {
-    EndgameView(isVictory: true, goToMenuAction: {}, tryAgainAction: {})
+    EndgameView(isVictory: false, goToMenuAction: {}, tryAgainAction: {}, nextLvlAction: {})
 }

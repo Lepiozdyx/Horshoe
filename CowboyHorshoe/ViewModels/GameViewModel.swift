@@ -51,18 +51,26 @@ class GameViewModel: ObservableObject {
     /// Индексы подков, которые уже размещены на столбах
     private var placedHorseshoeIndices: Set<Int> = []
     
+    // Сохраняем начальные позиции
+    private let initialPlayerPosition: (x: Int, y: Int)
+    private let initialHorseshoePositions: [(x: Int, y: Int)]
+    
     // MARK: - Initialization
     
     init(gridSize: Int = 6,
          playerStart: (x: Int, y: Int) = (0, 0),
          horseshoes: [(x: Int, y: Int)] = [(2, 2), (3, 4)],
-         pillars: [(x: Int, y: Int)] = [(5, 2)],
+         pillars: [(x: Int, y: Int)] = [(0, 2), (5, 2)],
          obstacles: [(x: Int, y: Int)] = [(4, 1), (5, 4)]) {
         self.gridSize = gridSize
         self.playerPosition = playerStart
         self.horseshoePositions = horseshoes
         self.pillarPositions = pillars
         self.obstaclePositions = obstacles
+        
+        // Сохраняем начальные позиции
+        self.initialPlayerPosition = playerStart
+        self.initialHorseshoePositions = horseshoes
     }
     
     // MARK: - Public Methods
@@ -155,7 +163,9 @@ class GameViewModel: ObservableObject {
     func resetGame() {
         isGameLost = false
         placedHorseshoeIndices.removeAll()
-        // Здесь также можно добавить сброс других состояний если потребуется
+        // Возвращаем все объекты на начальные позиции
+        playerPosition = initialPlayerPosition
+        horseshoePositions = initialHorseshoePositions
     }
     
     // MARK: - Private Methods

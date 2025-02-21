@@ -39,6 +39,9 @@ class GameScene: SKScene {
     
     var viewModel: GameViewModel!
     
+    var gameOverCallback: ((Bool) -> Void)?
+    
+    private var backgroundNode: SKSpriteNode?
     private var boardNode: SKNode!
     private var playerNode: SKSpriteNode!
     private var horseshoeNodes: [SKSpriteNode] = []
@@ -74,6 +77,20 @@ class GameScene: SKScene {
     }
     
     // MARK: - Public Methods
+    
+    func resetScene() {
+        // Удаляем все игровые объекты
+        boardNode.removeAllChildren()
+        horseshoeNodes.removeAll()
+        obstacleNodes.removeAll()
+        pillarNodes.removeAll()
+        playerNode = nil  // Обнуляем ссылку на игрока
+        
+        // Пересоздаем сцену с фоном
+        setupScene()
+        setupBoard()
+        setupGameObjects()  // Это создаст новые объекты с позициями из viewModel
+    }
     
     func movePlayer(direction: GameViewModel.Direction) {
         viewModel.movePlayer(direction: direction)
@@ -137,18 +154,21 @@ class GameScene: SKScene {
     
     private func setupScene() {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        
         setupBackground()
         setupBoardNode()
     }
     
     private func setupBackground() {
+        // Удаляем старый фон если он есть
+        backgroundNode?.removeFromParent()
+        
         let bgTexture = SKTexture(imageNamed: ImageNames.bg2.rawValue)
         let bgNode = SKSpriteNode(texture: bgTexture)
         bgNode.size = size
         bgNode.position = .zero
         bgNode.zPosition = Constants.ZPosition.background
         addChild(bgNode)
+        backgroundNode = bgNode
     }
     
     private func setupBoardNode() {
@@ -185,12 +205,12 @@ class GameScene: SKScene {
     
     private func setupPlayer() {
         let size = CGSize(width: cellSize * Constants.NodeScale.player,
-                         height: cellSize * Constants.NodeScale.player * 1.6) // Увеличиваем высоту для ковбоя
+                          height: cellSize * Constants.NodeScale.player * 1.6)
         let texture = SKTexture(imageNamed: ImageNames.cowboy.rawValue)
         
         playerNode = SKSpriteNode(texture: texture, size: size)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x,
-                                              gridY: viewModel.playerPosition.y)
+                                                gridY: viewModel.playerPosition.y)
         playerNode.zPosition = Constants.ZPosition.gameObject
         boardNode.addChild(playerNode)
     }
@@ -302,10 +322,10 @@ class GameScene: SKScene {
         
         if viewModel.isGameLost {
             print("❌ ПОРАЖЕНИЕ: Подкова вышла за пределы поля")
-            presentGameOver(message: "Loose!")
+            gameOverCallback?(false)
         } else if viewModel.isVictory() {
             print("🏆 ПОБЕДА: Все столбы заняты подковами")
-            presentGameOver(message: "Win!")
+            gameOverCallback?(true)
         } else {
             print("🎮 Игра продолжается...")
             print("- Подковы на столбах: \(result.placedHorseshoes.count)")
@@ -313,24 +333,24 @@ class GameScene: SKScene {
         }
     }
     
-    private func presentGameOver(message: String) {
-        let overlaySize = CGSize(width: boardSize * Constants.GameOver.overlayWidthFactor,
-                               height: boardSize * Constants.GameOver.overlayHeightFactor)
-        
-        let overlay = SKShapeNode(rectOf: overlaySize,
-                                cornerRadius: Constants.GameOver.overlayCornerRadius)
-        overlay.fillColor = .black
-        overlay.alpha = Constants.GameOver.overlayAlpha
-        overlay.position = .zero
-        overlay.zPosition = Constants.ZPosition.overlay
-        boardNode.addChild(overlay)
-        
-        let label = SKLabelNode(text: message)
-        label.fontName = "Helvetica-Bold"
-        label.fontSize = Constants.GameOver.labelFontSize
-        label.fontColor = .white
-        label.position = CGPoint(x: 0, y: -label.frame.height / 2)
-        label.zPosition = Constants.ZPosition.overlayText
-        overlay.addChild(label)
-    }
+//    private func presentGameOver(message: String) {
+//        let overlaySize = CGSize(width: boardSize * Constants.GameOver.overlayWidthFactor,
+//                               height: boardSize * Constants.GameOver.overlayHeightFactor)
+//        
+//        let overlay = SKShapeNode(rectOf: overlaySize,
+//                                cornerRadius: Constants.GameOver.overlayCornerRadius)
+//        overlay.fillColor = .black
+//        overlay.alpha = Constants.GameOver.overlayAlpha
+//        overlay.position = .zero
+//        overlay.zPosition = Constants.ZPosition.overlay
+//        boardNode.addChild(overlay)
+//        
+//        let label = SKLabelNode(text: message)
+//        label.fontName = "Helvetica-Bold"
+//        label.fontSize = Constants.GameOver.labelFontSize
+//        label.fontColor = .white
+//        label.position = CGPoint(x: 0, y: -label.frame.height / 2)
+//        label.zPosition = Constants.ZPosition.overlayText
+//        overlay.addChild(label)
+//    }
 }

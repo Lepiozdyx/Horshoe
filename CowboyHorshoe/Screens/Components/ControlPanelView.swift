@@ -32,7 +32,7 @@ struct ControlPanelView: View {
                     }
                 }
                 
-                HStack(spacing: 20) {
+                HStack(spacing: 30) {
                     Button {
                         scene.movePlayer(direction: .left)
                     } label: {
@@ -56,7 +56,7 @@ struct ControlPanelView: View {
                 Image(.controlRectangle)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 40)
+                    .frame(maxWidth: 45)
                     .rotationEffect(.degrees(90))
             }
             
@@ -68,7 +68,7 @@ struct ControlPanelView: View {
                 Image(.throw)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 150)
+                    .frame(maxWidth: 120)
             }
         }
     }
