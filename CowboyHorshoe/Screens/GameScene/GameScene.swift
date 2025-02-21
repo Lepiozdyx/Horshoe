@@ -22,16 +22,6 @@ class GameScene: SKScene {
             static let background: CGFloat = -100
             static let board: CGFloat = 0
             static let gameObject: CGFloat = 100
-            static let overlay: CGFloat = 200
-            static let overlayText: CGFloat = 201
-        }
-        
-        enum GameOver {
-            static let overlayCornerRadius: CGFloat = 20
-            static let overlayAlpha: CGFloat = 0.7
-            static let labelFontSize: CGFloat = 40
-            static let overlayWidthFactor: CGFloat = 0.8
-            static let overlayHeightFactor: CGFloat = 0.4
         }
     }
     
@@ -187,11 +177,16 @@ class GameScene: SKScene {
                 let position = positionFor(gridX: x, gridY: y)
                 let zPosition = CGFloat(viewModel.gridSize - y)
                 
-                let cubeNode = SKSpriteNode(texture: cubeTexture,
-                                          size: CGSize(width: cellSize, height: cellSize))
-                cubeNode.position = position
-                cubeNode.zPosition = zPosition
-                boardNode.addChild(cubeNode)
+                // Проверяем, является ли ячейка пустой
+                let isEmptyTile = viewModel.emptyTilePositions.contains { $0.x == x && $0.y == y }
+                
+                if !isEmptyTile {
+                    let cubeNode = SKSpriteNode(texture: cubeTexture,
+                                              size: CGSize(width: cellSize, height: cellSize))
+                    cubeNode.position = position
+                    cubeNode.zPosition = zPosition
+                    boardNode.addChild(cubeNode)
+                }
             }
         }
     }

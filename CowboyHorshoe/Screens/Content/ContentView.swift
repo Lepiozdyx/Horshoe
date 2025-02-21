@@ -4,6 +4,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    
+    @StateObject private var scoreManager = ScoreManager.shared
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -11,7 +14,7 @@ struct ContentView: View {
                 
                 VStack {
                     HStack {
-                        ScoreboardView(value: 0)
+                        ScoreboardView(value: scoreManager.score)
                         Spacer()
                     }
                     

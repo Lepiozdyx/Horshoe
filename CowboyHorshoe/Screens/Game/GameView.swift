@@ -8,6 +8,7 @@ struct GameView: View {
     
     @Environment(\.dismiss) var dismiss
     @StateObject var viewModel = GameViewModel()
+    @StateObject private var scoreManager = ScoreManager.shared
     @State private var showEndGame = false
     @State private var isVictory = false
     @State private var scene: GameScene?
@@ -56,6 +57,7 @@ struct GameView: View {
         newScene.viewModel = viewModel
         newScene.gameOverCallback = { isWin in
             isVictory = isWin
+            if isWin { scoreManager.addScore(10) }
             showEndGame = true
         }
         scene = newScene

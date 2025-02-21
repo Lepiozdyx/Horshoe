@@ -6,18 +6,13 @@ import Foundation
 class GameViewModel: ObservableObject {
     // MARK: - Types
     
-    /// Направление движения игрока
     enum Direction {
         case up, down, left, right
     }
     
-    /// Результат броска подковы
     struct ThrowResult {
-        /// Новые позиции всех подков
         let newPositions: [(x: Int, y: Int)]
-        /// Флаг ухода подковы в аут
         let isOut: Bool
-        /// Индексы подков на столбах
         let placedHorseshoes: Set<Int>
     }
     
@@ -28,30 +23,19 @@ class GameViewModel: ObservableObject {
     
     // MARK: - Public Properties
     
-    /// Размер игрового поля
     let gridSize: Int
     
-    /// Текущая позиция игрока
     @Published private(set) var playerPosition: (x: Int, y: Int)
-    
-    /// Позиции подков
     @Published private(set) var horseshoePositions: [(x: Int, y: Int)]
-    
-    /// Флаг, показывающий что хотя бы одна подкова в ауте
     @Published private(set) var isGameLost = false
     
-    /// Позиции столбов
     let pillarPositions: [(x: Int, y: Int)]
-    
-    /// Позиции препятствий
     let obstaclePositions: [(x: Int, y: Int)]
+    let emptyTilePositions: [(x: Int, y: Int)]
     
     // MARK: - Private Properties
     
-    /// Индексы подков, которые уже размещены на столбах
     private var placedHorseshoeIndices: Set<Int> = []
-    
-    // Сохраняем начальные позиции
     private let initialPlayerPosition: (x: Int, y: Int)
     private let initialHorseshoePositions: [(x: Int, y: Int)]
     
@@ -61,21 +45,21 @@ class GameViewModel: ObservableObject {
          playerStart: (x: Int, y: Int) = (0, 0),
          horseshoes: [(x: Int, y: Int)] = [(2, 2), (3, 4)],
          pillars: [(x: Int, y: Int)] = [(0, 2), (5, 2)],
-         obstacles: [(x: Int, y: Int)] = [(4, 1), (5, 4)]) {
+         obstacles: [(x: Int, y: Int)] = [(4, 1), (5, 4)],
+         emptyTiles: [(x: Int, y: Int)] = [(0, 1), (0, 4)]) {
         self.gridSize = gridSize
         self.playerPosition = playerStart
         self.horseshoePositions = horseshoes
         self.pillarPositions = pillars
         self.obstaclePositions = obstacles
+        self.emptyTilePositions = emptyTiles
         
-        // Сохраняем начальные позиции
         self.initialPlayerPosition = playerStart
         self.initialHorseshoePositions = horseshoes
     }
     
     // MARK: - Public Methods
     
-    /// Перемещает игрока в указанном направлении
     func movePlayer(direction: Direction) {
         var newPosition = playerPosition
         
@@ -86,22 +70,10 @@ class GameViewModel: ObservableObject {
         case .right: newPosition.x += 1
         }
         
-        // Проверяем что новая позиция:
-        // - в пределах поля
-        // - не занята препятствием
-        // - не занята столбом
-        // - не занята подковой
-        guard isValidPosition(newPosition) &&
-                !hasObstacle(at: newPosition) &&
-                !isOnPillar(position: newPosition) &&
-                !isHorseshoeAt(position: newPosition) else {
-            return
-        }
-        
+        guard isValidPositionForPlayer(newPosition) else { return }
         playerPosition = newPosition
     }
     
-    /// Выполняет бросок подков в соответствии с текущим положением игрока
     func performThrow() -> ThrowResult {
         let initialPositions = horseshoePositions
         var isOutThisThrow = false
@@ -116,15 +88,14 @@ class GameViewModel: ObservableObject {
             let newPosition = calculateNewPosition(from: horseshoePos, in: direction)
             horseshoePositions[i] = newPosition
             
-            // Проверяем попадание на столб
             if isOnPillar(position: newPosition) {
                 currentPlacedIndices.insert(i)
                 print("🎯 Подкова \(i) попала на столб в позиции \(newPosition)")
                 print("📊 Всего подков на столбах: \(currentPlacedIndices.count) из \(pillarPositions.count) необходимых")
             }
             
-            // Проверяем аут
-            if !isEdge(initialPos) && isEdge(newPosition) && !isOnPillar(position: newPosition) {
+            // Проверяем аут - теперь подкова уходит в аут при попадании на пустую ячейку
+            if (isEdge(newPosition) || isEmptyTile(position: newPosition)) && !isOnPillar(position: newPosition) {
                 isOutThisThrow = true
                 isGameLost = true
                 print("❌ Подкова \(i) ушла в аут! Начальная позиция: \(initialPos), конечная: \(newPosition)")
@@ -144,7 +115,6 @@ class GameViewModel: ObservableObject {
         )
     }
     
-    /// Проверяет, достигнута ли победа
     func isVictory() -> Bool {
         pillarPositions.allSatisfy { pillar in
             placedHorseshoeIndices.contains { index in
@@ -154,33 +124,35 @@ class GameViewModel: ObservableObject {
         }
     }
     
-    /// Проверяет, находится ли подкова на столбе
     func isHorseshoePlaced(at index: Int) -> Bool {
         placedHorseshoeIndices.contains(index)
     }
     
-    /// Сброс состояния игры
     func resetGame() {
         isGameLost = false
         placedHorseshoeIndices.removeAll()
-        // Возвращаем все объекты на начальные позиции
         playerPosition = initialPlayerPosition
         horseshoePositions = initialHorseshoePositions
     }
     
     // MARK: - Private Methods
     
-    // Добавляем вспомогательный метод для проверки подковы
     private func isHorseshoeAt(position: (x: Int, y: Int)) -> Bool {
         horseshoePositions.contains { $0.x == position.x && $0.y == position.y }
     }
     
-    /// Проверяет, находится ли позиция в пределах поля
+    private func isValidPositionForPlayer(_ pos: (x: Int, y: Int)) -> Bool {
+        isValidPosition(pos) &&
+        !hasObstacle(at: pos) &&
+        !isOnPillar(position: pos) &&
+        !isHorseshoeAt(position: pos) &&
+        !isEmptyTile(position: pos)
+    }
+    
     private func isValidPosition(_ pos: (x: Int, y: Int)) -> Bool {
         pos.x >= 0 && pos.x < gridSize && pos.y >= 0 && pos.y < gridSize
     }
     
-    /// Определяет направление движения подковы относительно игрока
     private func getMovementDirection(from position: (x: Int, y: Int)) -> MovementDirection? {
         if playerPosition.x == position.x {
             let dy = playerPosition.y > position.y ? -1 : 1
@@ -192,7 +164,6 @@ class GameViewModel: ObservableObject {
         return nil
     }
     
-    /// Вычисляет новую позицию подковы с учетом препятствий и границ
     private func calculateNewPosition(from start: (x: Int, y: Int),
                                     in direction: MovementDirection) -> (x: Int, y: Int) {
         var current = start
@@ -201,38 +172,45 @@ class GameViewModel: ObservableObject {
         case .horizontal(let dx):
             while true {
                 let nextX = current.x + dx
-                guard isValidPosition((nextX, current.y)) else { break }
-                guard !hasObstacle(at: (nextX, current.y)) else { break }
+                let nextPos = (nextX, current.y)
+                guard isValidPosition(nextPos) else { break }
+                guard !hasObstacle(at: nextPos) else { break }
                 
                 current.x = nextX
                 if isOnPillar(position: current) { break }
+                // Если следующая позиция - пустая ячейка, подкова может пролететь через неё
+                if isEmptyTile(position: current) { break }
             }
             
         case .vertical(let dy):
             while true {
                 let nextY = current.y + dy
-                guard isValidPosition((current.x, nextY)) else { break }
-                guard !hasObstacle(at: (current.x, nextY)) else { break }
+                let nextPos = (current.x, nextY)
+                guard isValidPosition(nextPos) else { break }
+                guard !hasObstacle(at: nextPos) else { break }
                 
                 current.y = nextY
                 if isOnPillar(position: current) { break }
+                // Если следующая позиция - пустая ячейка, подкова может пролететь через неё
+                if isEmptyTile(position: current) { break }
             }
         }
         
         return current
     }
     
-    /// Проверяет наличие препятствия в указанной позиции
     private func hasObstacle(at position: (x: Int, y: Int)) -> Bool {
         obstaclePositions.contains { $0.x == position.x && $0.y == position.y }
     }
     
-    /// Проверяет, находится ли позиция на столбе
     private func isOnPillar(position: (x: Int, y: Int)) -> Bool {
         pillarPositions.contains { $0.x == position.x && $0.y == position.y }
     }
     
-    /// Проверяет, находится ли позиция на краю поля
+    private func isEmptyTile(position: (x: Int, y: Int)) -> Bool {
+        emptyTilePositions.contains { $0.x == position.x && $0.y == position.y }
+    }
+    
     private func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
         pos.x == 0 || pos.x == gridSize - 1 || pos.y == 0 || pos.y == gridSize - 1
     }
