@@ -13,20 +13,22 @@ struct GameView: View {
     @State private var scene: GameScene?
     
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack {
             if let currentScene = scene {
                 SpriteView(scene: currentScene)
                     .ignoresSafeArea()
                 
-                ControlPanelView(scene: currentScene)
-                    .padding(.horizontal)
-                    .padding(.bottom, 20)
-                
-                CloseGameView {
-                    resetLvl()
-                    goToMenu()
+                VStack {
+                    CloseGameView { goToMenu()}
+                        .padding(.horizontal)
+                        .padding(.top)
+                    
+                    Spacer()
+                    
+                    ControlPanelView(scene: currentScene)
+                        .padding(.horizontal)
+                        .padding(.bottom, 20)
                 }
-                .padding()
             }
         }
         .navigationBarBackButtonHidden(true)
@@ -86,25 +88,4 @@ struct GameView: View {
 
 #Preview {
     GameView()
-}
-
-struct CloseGameView: View {
-    let action: () -> ()
-    var body: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button {
-                    SettingsManager.shared.playClick()
-                    action()
-                } label: {
-                    Image(.xMark)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 50)
-                }
-            }
-            Spacer()
-        }
-    }
 }

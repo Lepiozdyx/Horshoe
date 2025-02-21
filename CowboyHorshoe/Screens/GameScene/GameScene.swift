@@ -332,25 +332,4 @@ class GameScene: SKScene {
             print("- Всего столбов: \(viewModel.pillarPositions.count)")
         }
     }
-    
-//    private func presentGameOver(message: String) {
-//        let overlaySize = CGSize(width: boardSize * Constants.GameOver.overlayWidthFactor,
-//                               height: boardSize * Constants.GameOver.overlayHeightFactor)
-//        
-//        let overlay = SKShapeNode(rectOf: overlaySize,
-//                                cornerRadius: Constants.GameOver.overlayCornerRadius)
-//        overlay.fillColor = .black
-//        overlay.alpha = Constants.GameOver.overlayAlpha
-//        overlay.position = .zero
-//        overlay.zPosition = Constants.ZPosition.overlay
-//        boardNode.addChild(overlay)
-//        
-//        let label = SKLabelNode(text: message)
-//        label.fontName = "Helvetica-Bold"
-//        label.fontSize = Constants.GameOver.labelFontSize
-//        label.fontColor = .white
-//        label.position = CGPoint(x: 0, y: -label.frame.height / 2)
-//        label.zPosition = Constants.ZPosition.overlayText
-//        overlay.addChild(label)
-//    }
 }
