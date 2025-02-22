@@ -67,8 +67,8 @@ final class LevelManager: ObservableObject {
                 Position(x: 3, y: 5)
             ],
             pillars: [
-                Position(x: 6, y: 2),
-                Position(x: 6, y: 4),
+                Position(x: 0, y: 3),
+                Position(x: 3, y: 0),
                 Position(x: 3, y: 6),
                 Position(x: 6, y: 3)
             ],
@@ -108,12 +108,10 @@ final class LevelManager: ObservableObject {
                 Position(x: 2, y: 1),
                 Position(x: 3, y: 1),
                 Position(x: 4, y: 1),
-                Position(x: 5, y: 1),
-                Position(x: 2, y: 2)
+                Position(x: 5, y: 1)
             ],
             emptyTiles: [
-                Position(x: 0, y: 0),
-                Position(x: 6, y: 3)
+                Position(x: 0, y: 0)
             ]
         ),
         
