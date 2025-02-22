@@ -7,10 +7,7 @@ import SpriteKit
 struct GameView: View {
     
     @Environment(\.dismiss) var dismiss
-    @StateObject var viewModel = GameViewModel()
-    @StateObject private var scoreManager = ScoreManager.shared
-    @State private var showEndGame = false
-    @State private var isVictory = false
+    @StateObject private var coordinator = GameCoordinator()
     @State private var scene: GameScene?
     
     var body: some View {
@@ -20,9 +17,12 @@ struct GameView: View {
                     .ignoresSafeArea()
                 
                 VStack {
-                    CloseGameView { goToMenu()}
-                        .padding(.horizontal)
-                        .padding(.top)
+                    CloseGameView {
+                        coordinator.cleanup()
+                        dismiss()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top)
                     
                     Spacer()
                     
@@ -34,57 +34,24 @@ struct GameView: View {
         }
         .navigationBarBackButtonHidden(true)
         .overlay {
-            if showEndGame {
+            if coordinator.showEndGame {
                 EndgameView(
-                    isVictory: isVictory,
-                    goToMenuAction: goToMenu,
-                    tryAgainAction: resetLvl,
-                    nextLvlAction: nextLvl
+                    isVictory: coordinator.isVictory,
+                    goToMenuAction: {
+                        coordinator.cleanup()
+                        dismiss()
+                    },
+                    tryAgainAction: coordinator.resetLevel,
+                    nextLvlAction: coordinator.nextLevel
                 )
             }
         }
         .onAppear {
-            setupNewScene()
+            scene = coordinator.setupNewScene(size: UIScreen.main.bounds.size)
         }
         .onDisappear {
-            cleanupScene()
+            coordinator.cleanup()
         }
-    }
-    
-    private func setupNewScene() {
-        let newScene = GameScene(size: UIScreen.main.bounds.size)
-        newScene.scaleMode = .aspectFit
-        newScene.viewModel = viewModel
-        newScene.gameOverCallback = { isWin in
-            isVictory = isWin
-            if isWin { scoreManager.addScore(10) }
-            showEndGame = true
-        }
-        scene = newScene
-    }
-    
-    private func cleanupScene() {
-        scene?.removeAllChildren()
-        scene?.removeFromParent()
-        scene = nil
-    }
-    
-    private func goToMenu() {
-        cleanupScene()
-        dismiss()
-    }
-    
-    private func resetLvl() {
-        showEndGame = false
-        viewModel.resetGame()
-        scene?.resetScene()
-    }
-    
-    private func nextLvl() {
-        showEndGame = false
-        // TODO: В будущем здесь будет логика перехода к следующему уровню
-        // Пока просто сбрасываем текущий
-        resetLvl()
     }
 }
 

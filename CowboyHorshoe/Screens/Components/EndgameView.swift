@@ -23,9 +23,6 @@ struct EndgameView: View {
                 Image(.underlay5)
                     .resizable()
                     .frame(maxWidth: 400, maxHeight: 400)
-//                    .overlay(alignment: .topTrailing) {
-//                        XmarkButtonView()
-//                    }
                     .overlay(alignment: .top) {
                         Image(isVictory ? .win : .lose)
                             .resizable()
