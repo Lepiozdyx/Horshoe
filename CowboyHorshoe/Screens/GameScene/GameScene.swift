@@ -10,6 +10,7 @@ class GameScene: SKScene {
         static let moveAnimationDuration: TimeInterval = 0.2
         static let boardScale: CGFloat = 0.8
         static let cellOverlapFactor: CGFloat = 0.55
+        static let controlPanelWidthLandscape: CGFloat = 140
         
         enum NodeScale {
             static let player: CGFloat = 0.5
@@ -38,8 +39,9 @@ class GameScene: SKScene {
     private var pillarNodes: [SKSpriteNode] = []
     
     private var cellSize: CGFloat {
-        let maxWidth = size.width * Constants.boardScale
-        let maxHeight = size.height * Constants.boardScale
+        // Используем доступную область вместо всего размера экрана
+        let maxWidth = availableGameArea.width * Constants.boardScale
+        let maxHeight = availableGameArea.height * Constants.boardScale
         
         // Рассчитываем размер ячейки исходя из ширины
         let cellSizeByWidth = maxWidth / CGFloat(viewModel.gridWidth)
@@ -49,14 +51,26 @@ class GameScene: SKScene {
         
         // Если высота доски не помещается, пересчитываем размер ячейки исходя из высоты
         if totalHeightByWidth > maxHeight {
-            // Решаем уравнение:
-            // cellSize + (cellSize - cellSize * overlapFactor) * (gridHeight - 1) = maxHeight
-            // cellSize * (1 + (1 - overlapFactor) * (gridHeight - 1)) = maxHeight
             let factor = 1 + (1 - Constants.cellOverlapFactor) * CGFloat(viewModel.gridHeight - 1)
             return maxHeight / factor
         }
         
         return cellSizeByWidth
+    }
+    
+    private var availableGameArea: CGRect {
+        let isLandscape = size.width > size.height
+        if isLandscape {
+            // В ландшафте учитываем боковые панели управления
+            let leftPadding = Constants.controlPanelWidthLandscape
+            let rightPadding = Constants.controlPanelWidthLandscape
+            let width = size.width - leftPadding - rightPadding
+            return CGRect(x: leftPadding, y: 0, width: width, height: size.height)
+        } else {
+            // В портрете учитываем нижнюю панель управления
+            let height = size.height
+            return CGRect(x: 0, y: 0, width: size.width, height: height)
+        }
     }
     
     private var boardWidth: CGFloat {
@@ -184,9 +198,12 @@ class GameScene: SKScene {
     private func setupBoardNode() {
         boardNode = SKNode()
         
-        // Центрируем доску по горизонтали и вертикали
-        let horizontalOffset = -boardWidth / 2
-        let verticalOffset = -boardHeight / 2
+        // Центрируем доску относительно доступной игровой области
+        let centerX = availableGameArea.midX - size.width/2
+        let centerY = availableGameArea.midY - size.height/2
+        
+        let horizontalOffset = centerX - boardWidth/2
+        let verticalOffset = centerY - boardHeight/2
         
         boardNode.position = CGPoint(x: horizontalOffset, y: verticalOffset)
         boardNode.zPosition = Constants.ZPosition.board
