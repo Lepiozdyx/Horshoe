@@ -292,7 +292,7 @@ class GameScene: SKScene {
     private func setupPlayer() {
         let size = CGSize(width: cellSize * Constants.NodeScale.player,
                           height: cellSize * Constants.NodeScale.player * 1.6)
-        let texture = SKTexture(imageNamed: ImageNames.cowboy.rawValue)
+        let texture = SKTexture(image: UIImage(resource: SkinManager.shared.currentSkin.imageResource))
         
         playerNode = SKSpriteNode(texture: texture, size: size)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x,

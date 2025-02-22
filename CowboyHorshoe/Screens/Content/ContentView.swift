@@ -13,11 +13,8 @@ struct ContentView: View {
                 BackgroundView(isMenu: true)
                 
                 VStack {
-                    HStack {
-                        ScoreboardView(value: scoreManager.score)
-                        Spacer()
-                    }
-                    
+                    ScoreboardView(value: scoreManager.score)
+
                     HStack(spacing: 30) {
                         // SettingsView()
                         NavigationLink(destination: SettingsView()) {
@@ -30,27 +27,20 @@ struct ContentView: View {
                         }
                         
                         // ShopView()
-                        NavigationLink(destination: {}) {
+                        NavigationLink(destination: ShopView()) {
                             MenuButtonView(name: .shop)
                         }
                     }
+                    .padding(.top)
                     
                     Spacer()
                     
-                    HStack {
-                        // LevelsView()
-                        NavigationLink(destination: {}) {
-                            MenuButtonView(name: .level)
-                        }
-                        Spacer()
-                        
-                        // GameView()
-                        NavigationLink(destination: GameView()) {
-                            Image(.start)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: 150)
-                        }
+                    // GameView()
+                    NavigationLink(destination: GameView()) {
+                        Image(.start)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 200)
                     }
                 }
                 .padding()
