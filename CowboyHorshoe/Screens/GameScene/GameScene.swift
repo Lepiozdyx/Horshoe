@@ -37,25 +37,26 @@ class GameScene: SKScene {
     private var obstacleNodes: [SKSpriteNode] = []
     private var pillarNodes: [SKSpriteNode] = []
     
-//    private var boardSize: CGFloat {
-//        min(size.width, size.height) * Constants.boardScale
-//    }
-    
     private var cellSize: CGFloat {
         let maxWidth = size.width * Constants.boardScale
         let maxHeight = size.height * Constants.boardScale
         
-        // Учитываем соотношение сторон сетки
-        let gridAspectRatio = CGFloat(viewModel.gridWidth) / CGFloat(viewModel.gridHeight)
-        let screenAspectRatio = maxWidth / maxHeight
+        // Рассчитываем размер ячейки исходя из ширины
+        let cellSizeByWidth = maxWidth / CGFloat(viewModel.gridWidth)
         
-        if gridAspectRatio > screenAspectRatio {
-            // Ограничено по ширине
-            return maxWidth / CGFloat(viewModel.gridWidth)
-        } else {
-            // Ограничено по высоте
-            return maxHeight / (CGFloat(viewModel.gridHeight) * (1 + Constants.cellOverlapFactor))
+        // Рассчитываем реальную высоту доски при таком размере ячейки
+        let totalHeightByWidth = cellSizeByWidth + (cellSizeByWidth - (cellSizeByWidth * Constants.cellOverlapFactor)) * CGFloat(viewModel.gridHeight - 1)
+        
+        // Если высота доски не помещается, пересчитываем размер ячейки исходя из высоты
+        if totalHeightByWidth > maxHeight {
+            // Решаем уравнение:
+            // cellSize + (cellSize - cellSize * overlapFactor) * (gridHeight - 1) = maxHeight
+            // cellSize * (1 + (1 - overlapFactor) * (gridHeight - 1)) = maxHeight
+            let factor = 1 + (1 - Constants.cellOverlapFactor) * CGFloat(viewModel.gridHeight - 1)
+            return maxHeight / factor
         }
+        
+        return cellSizeByWidth
     }
     
     private var boardWidth: CGFloat {
