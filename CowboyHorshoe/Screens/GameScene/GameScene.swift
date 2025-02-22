@@ -20,9 +20,34 @@ class GameScene: SKScene {
         }
         
         enum ZPosition {
-            static let background: CGFloat = -100
-            static let board: CGFloat = 0
-            static let gameObject: CGFloat = 100
+            // Base layers
+            static let background: CGFloat = -1000
+            static let boardBase: CGFloat = 0
+            static let gameObjects: CGFloat = 1000
+            
+            // Object types z-offset within their row
+            enum GameObjectType {
+                case player
+                case horseshoe
+                case obstacle
+                case pillar
+                
+                var zOffset: CGFloat {
+                    switch self {
+                    case .player: return 5
+                    case .horseshoe: return 3
+                    case .obstacle: return 4
+                    case .pillar: return 2
+                    }
+                }
+            }
+            
+            // Calculate z-position for game objects
+            static func forGameObject(at row: Int, type: GameObjectType) -> CGFloat {
+                // Higher rows (further from screen) should have lower z-index
+                let baseZ = gameObjects + CGFloat(1000 - row * 10)
+                return baseZ + type.zOffset
+            }
         }
     }
     
@@ -120,9 +145,15 @@ class GameScene: SKScene {
     func movePlayer(direction: GameViewModel.Direction) {
         viewModel.movePlayer(direction: direction)
         let newPosition = objectPositionFor(gridX: viewModel.playerPosition.x,
-                                          gridY: viewModel.playerPosition.y)
+                                            gridY: viewModel.playerPosition.y)
         
-        playerNode.run(SKAction.move(to: newPosition, duration: Constants.moveAnimationDuration))
+        let moveAction = SKAction.move(to: newPosition, duration: Constants.moveAnimationDuration)
+        let updateZAction = SKAction.run { [weak self] in
+            guard let self = self else { return }
+            self.updateObjectZPosition(self.playerNode, type: .player, row: self.viewModel.playerPosition.y)
+        }
+        
+        playerNode.run(SKAction.sequence([moveAction, updateZAction]))
     }
     
     func performThrow() {
@@ -206,17 +237,17 @@ class GameScene: SKScene {
         let verticalOffset = centerY - boardHeight/2
         
         boardNode.position = CGPoint(x: horizontalOffset, y: verticalOffset)
-        boardNode.zPosition = Constants.ZPosition.board
+        boardNode.zPosition = Constants.ZPosition.boardBase
         addChild(boardNode)
     }
     
     private func setupBoard() {
         let cubeTexture = SKTexture(imageNamed: ImageNames.gameCube.rawValue)
         
+        // Отрисовываем ячейки сверху вниз для правильного наложения
         for y in (0..<viewModel.gridHeight).reversed() {
             for x in 0..<viewModel.gridWidth {
                 let position = positionFor(gridX: x, gridY: y)
-                let zPosition = CGFloat(viewModel.gridHeight - y)
                 
                 let isEmptyTile = viewModel.emptyTilePositions.contains { $0.x == x && $0.y == y }
                 
@@ -224,11 +255,16 @@ class GameScene: SKScene {
                     let cubeNode = SKSpriteNode(texture: cubeTexture,
                                                 size: CGSize(width: cellSize, height: cellSize))
                     cubeNode.position = position
-                    cubeNode.zPosition = zPosition
+                    // Фиксированный z-index для ячеек
+                    cubeNode.zPosition = Constants.ZPosition.boardBase
                     boardNode.addChild(cubeNode)
                 }
             }
         }
+    }
+    
+    private func updateObjectZPosition(_ node: SKSpriteNode, type: Constants.ZPosition.GameObjectType, row: Int) {
+        node.zPosition = Constants.ZPosition.forGameObject(at: row, type: type)
     }
     
     private func setupGameObjects() {
@@ -246,19 +282,19 @@ class GameScene: SKScene {
         playerNode = SKSpriteNode(texture: texture, size: size)
         playerNode.position = objectPositionFor(gridX: viewModel.playerPosition.x,
                                                 gridY: viewModel.playerPosition.y)
-        playerNode.zPosition = Constants.ZPosition.gameObject
+        updateObjectZPosition(playerNode, type: .player, row: viewModel.playerPosition.y)
         boardNode.addChild(playerNode)
     }
     
     private func setupHorseshoes() {
         let size = CGSize(width: cellSize * Constants.NodeScale.horseshoe,
-                         height: cellSize * Constants.NodeScale.horseshoe)
+                          height: cellSize * Constants.NodeScale.horseshoe)
         let texture = SKTexture(imageNamed: ImageNames.hShoe.rawValue)
         
         for position in viewModel.horseshoePositions {
             let node = SKSpriteNode(texture: texture, size: size)
             node.position = objectPositionFor(gridX: position.x, gridY: position.y)
-            node.zPosition = Constants.ZPosition.gameObject
+            updateObjectZPosition(node, type: .horseshoe, row: position.y)
             boardNode.addChild(node)
             horseshoeNodes.append(node)
         }
@@ -266,13 +302,13 @@ class GameScene: SKScene {
     
     private func setupObstacles() {
         let size = CGSize(width: cellSize * Constants.NodeScale.obstacle,
-                         height: cellSize * Constants.NodeScale.obstacle * 1.3) // Увеличиваем высоту для препятствий
+                          height: cellSize * Constants.NodeScale.obstacle * 1.3)
         
         for position in viewModel.obstaclePositions {
             let texture = SKTexture(imageNamed: ImageNames.cactus.rawValue)
             let node = SKSpriteNode(texture: texture, size: size)
             node.position = objectPositionFor(gridX: position.x, gridY: position.y)
-            node.zPosition = Constants.ZPosition.gameObject
+            updateObjectZPosition(node, type: .obstacle, row: position.y)
             boardNode.addChild(node)
             obstacleNodes.append(node)
         }
@@ -280,13 +316,13 @@ class GameScene: SKScene {
     
     private func setupPillars() {
         let size = CGSize(width: cellSize * Constants.NodeScale.pillar,
-                         height: cellSize * Constants.NodeScale.pillar * 3.5) // Увеличиваем высоту для столбов
+                          height: cellSize * Constants.NodeScale.pillar * 3.5)
         let texture = SKTexture(imageNamed: ImageNames.pillar.rawValue)
         
         for position in viewModel.pillarPositions {
             let node = SKSpriteNode(texture: texture, size: size)
             node.position = objectPositionFor(gridX: position.x, gridY: position.y)
-            node.zPosition = Constants.ZPosition.gameObject
+            updateObjectZPosition(node, type: .pillar, row: position.y)
             boardNode.addChild(node)
             pillarNodes.append(node)
         }
@@ -328,14 +364,19 @@ class GameScene: SKScene {
     }
     
     private func animateHorseshoe(_ node: SKSpriteNode,
-                                 along path: [(x: Int, y: Int)],
-                                 completion: @escaping () -> Void) {
+                                     along path: [(x: Int, y: Int)],
+                                  completion: @escaping () -> Void) {
         var actions: [SKAction] = []
         
         for gridPos in path {
             let destination = objectPositionFor(gridX: gridPos.x, gridY: gridPos.y)
             let moveAction = SKAction.move(to: destination, duration: Constants.moveAnimationDuration)
+            let updateZAction = SKAction.run { [weak self] in
+                guard let self = self else { return }
+                self.updateObjectZPosition(node, type: .horseshoe, row: gridPos.y)
+            }
             actions.append(moveAction)
+            actions.append(updateZAction)
         }
         
         let sequence = SKAction.sequence(actions)
