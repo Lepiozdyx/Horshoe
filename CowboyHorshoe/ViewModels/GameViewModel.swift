@@ -23,7 +23,8 @@ class GameViewModel: ObservableObject {
     
     // MARK: - Public Properties
     
-    let gridSize: Int
+    let gridWidth: Int
+    let gridHeight: Int
     
     @Published private(set) var playerPosition: (x: Int, y: Int)
     @Published private(set) var horseshoePositions: [(x: Int, y: Int)]
@@ -41,21 +42,18 @@ class GameViewModel: ObservableObject {
     
     // MARK: - Initialization
     
-    init(gridSize: Int = 6,
-         playerStart: (x: Int, y: Int) = (0, 0),
-         horseshoes: [(x: Int, y: Int)] = [(2, 2), (3, 4)],
-         pillars: [(x: Int, y: Int)] = [(0, 2), (5, 2)],
-         obstacles: [(x: Int, y: Int)] = [(4, 1), (5, 4)],
-         emptyTiles: [(x: Int, y: Int)] = [(0, 1), (0, 4)]) {
-        self.gridSize = gridSize
-        self.playerPosition = playerStart
-        self.horseshoePositions = horseshoes
-        self.pillarPositions = pillars
-        self.obstaclePositions = obstacles
-        self.emptyTilePositions = emptyTiles
+    init(configuration: LevelConfiguration) {
+        self.gridWidth = configuration.gridWidth
+        self.gridHeight = configuration.gridHeight
         
-        self.initialPlayerPosition = playerStart
-        self.initialHorseshoePositions = horseshoes
+        self.playerPosition = (configuration.playerStart.x, configuration.playerStart.y)
+        self.horseshoePositions = configuration.horseshoes.map { ($0.x, $0.y) }
+        self.pillarPositions = configuration.pillars.map { ($0.x, $0.y) }
+        self.obstaclePositions = configuration.obstacles.map { ($0.x, $0.y) }
+        self.emptyTilePositions = configuration.emptyTiles.map { ($0.x, $0.y) }
+        
+        self.initialPlayerPosition = (configuration.playerStart.x, configuration.playerStart.y)
+        self.initialHorseshoePositions = configuration.horseshoes.map { ($0.x, $0.y) }
     }
     
     // MARK: - Public Methods
@@ -94,7 +92,6 @@ class GameViewModel: ObservableObject {
                 print("📊 Всего подков на столбах: \(currentPlacedIndices.count) из \(pillarPositions.count) необходимых")
             }
             
-            // Проверяем аут - теперь подкова уходит в аут при попадании на пустую ячейку
             if (isEdge(newPosition) || isEmptyTile(position: newPosition)) && !isOnPillar(position: newPosition) {
                 isOutThisThrow = true
                 isGameLost = true
@@ -150,7 +147,7 @@ class GameViewModel: ObservableObject {
     }
     
     private func isValidPosition(_ pos: (x: Int, y: Int)) -> Bool {
-        pos.x >= 0 && pos.x < gridSize && pos.y >= 0 && pos.y < gridSize
+        pos.x >= 0 && pos.x < gridWidth && pos.y >= 0 && pos.y < gridHeight
     }
     
     private func getMovementDirection(from position: (x: Int, y: Int)) -> MovementDirection? {
@@ -178,7 +175,6 @@ class GameViewModel: ObservableObject {
                 
                 current.x = nextX
                 if isOnPillar(position: current) { break }
-                // Если следующая позиция - пустая ячейка, подкова может пролететь через неё
                 if isEmptyTile(position: current) { break }
             }
             
@@ -191,7 +187,6 @@ class GameViewModel: ObservableObject {
                 
                 current.y = nextY
                 if isOnPillar(position: current) { break }
-                // Если следующая позиция - пустая ячейка, подкова может пролететь через неё
                 if isEmptyTile(position: current) { break }
             }
         }
@@ -212,6 +207,6 @@ class GameViewModel: ObservableObject {
     }
     
     private func isEdge(_ pos: (x: Int, y: Int)) -> Bool {
-        pos.x == 0 || pos.x == gridSize - 1 || pos.y == 0 || pos.y == gridSize - 1
+        pos.x == 0 || pos.x == gridWidth - 1 || pos.y == 0 || pos.y == gridHeight - 1
     }
 }

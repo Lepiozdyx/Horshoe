@@ -28,7 +28,6 @@ class GameScene: SKScene {
     // MARK: - Properties
     
     var viewModel: GameViewModel!
-    
     var gameOverCallback: ((Bool) -> Void)?
     
     private var backgroundNode: SKSpriteNode?
@@ -38,12 +37,33 @@ class GameScene: SKScene {
     private var obstacleNodes: [SKSpriteNode] = []
     private var pillarNodes: [SKSpriteNode] = []
     
-    private var boardSize: CGFloat {
-        min(size.width, size.height) * Constants.boardScale
-    }
+//    private var boardSize: CGFloat {
+//        min(size.width, size.height) * Constants.boardScale
+//    }
     
     private var cellSize: CGFloat {
-        boardSize / CGFloat(viewModel.gridSize)
+        let maxWidth = size.width * Constants.boardScale
+        let maxHeight = size.height * Constants.boardScale
+        
+        // Учитываем соотношение сторон сетки
+        let gridAspectRatio = CGFloat(viewModel.gridWidth) / CGFloat(viewModel.gridHeight)
+        let screenAspectRatio = maxWidth / maxHeight
+        
+        if gridAspectRatio > screenAspectRatio {
+            // Ограничено по ширине
+            return maxWidth / CGFloat(viewModel.gridWidth)
+        } else {
+            // Ограничено по высоте
+            return maxHeight / (CGFloat(viewModel.gridHeight) * (1 + Constants.cellOverlapFactor))
+        }
+    }
+    
+    private var boardWidth: CGFloat {
+        cellSize * CGFloat(viewModel.gridWidth)
+    }
+    
+    private var boardHeight: CGFloat {
+        cellSize + (cellSize - cellOverlap) * CGFloat(viewModel.gridHeight - 1)
     }
     
     private var cellOverlap: CGFloat {
@@ -51,7 +71,7 @@ class GameScene: SKScene {
     }
     
     private var actualBoardHeight: CGFloat {
-        cellSize + (cellSize - cellOverlap) * CGFloat(viewModel.gridSize - 1)
+        cellSize + (cellSize - cellOverlap) * CGFloat(viewModel.gridHeight - 1)
     }
     
     // MARK: - Scene Lifecycle
@@ -149,7 +169,6 @@ class GameScene: SKScene {
     }
     
     private func setupBackground() {
-        // Удаляем старый фон если он есть
         backgroundNode?.removeFromParent()
         
         let bgTexture = SKTexture(imageNamed: ImageNames.bg2.rawValue)
@@ -163,8 +182,12 @@ class GameScene: SKScene {
     
     private func setupBoardNode() {
         boardNode = SKNode()
-        let verticalOffset = (boardSize - actualBoardHeight) / 2
-        boardNode.position = CGPoint(x: 0, y: verticalOffset)
+        
+        // Центрируем доску по горизонтали и вертикали
+        let horizontalOffset = -boardWidth / 2
+        let verticalOffset = -boardHeight / 2
+        
+        boardNode.position = CGPoint(x: horizontalOffset, y: verticalOffset)
         boardNode.zPosition = Constants.ZPosition.board
         addChild(boardNode)
     }
@@ -172,17 +195,16 @@ class GameScene: SKScene {
     private func setupBoard() {
         let cubeTexture = SKTexture(imageNamed: ImageNames.gameCube.rawValue)
         
-        for y in (0..<viewModel.gridSize).reversed() {
-            for x in 0..<viewModel.gridSize {
+        for y in (0..<viewModel.gridHeight).reversed() {
+            for x in 0..<viewModel.gridWidth {
                 let position = positionFor(gridX: x, gridY: y)
-                let zPosition = CGFloat(viewModel.gridSize - y)
+                let zPosition = CGFloat(viewModel.gridHeight - y)
                 
-                // Проверяем, является ли ячейка пустой
                 let isEmptyTile = viewModel.emptyTilePositions.contains { $0.x == x && $0.y == y }
                 
                 if !isEmptyTile {
                     let cubeNode = SKSpriteNode(texture: cubeTexture,
-                                              size: CGSize(width: cellSize, height: cellSize))
+                                                size: CGSize(width: cellSize, height: cellSize))
                     cubeNode.position = position
                     cubeNode.zPosition = zPosition
                     boardNode.addChild(cubeNode)
@@ -229,8 +251,7 @@ class GameScene: SKScene {
                          height: cellSize * Constants.NodeScale.obstacle * 1.3) // Увеличиваем высоту для препятствий
         
         for position in viewModel.obstaclePositions {
-            let texture = SKTexture(imageNamed: Int.random(in: 0...1) == 0 ?
-                                  ImageNames.cactus.rawValue : ImageNames.fence.rawValue)
+            let texture = SKTexture(imageNamed: ImageNames.cactus.rawValue)
             let node = SKSpriteNode(texture: texture, size: size)
             node.position = objectPositionFor(gridX: position.x, gridY: position.y)
             node.zPosition = Constants.ZPosition.gameObject
@@ -256,18 +277,14 @@ class GameScene: SKScene {
     // MARK: - Private Methods - Position Calculation
     
     private func positionFor(gridX: Int, gridY: Int) -> CGPoint {
-        let offsetX = -boardSize / 2
-        let offsetY = -actualBoardHeight / 2
-        
-        let xPos = offsetX + CGFloat(gridX) * cellSize + cellSize / 2
-        let yPos = offsetY + CGFloat(gridY) * (cellSize - cellOverlap) + cellSize / 2
+        let xPos = CGFloat(gridX) * cellSize + cellSize / 2
+        let yPos = CGFloat(gridY) * (cellSize - cellOverlap) + cellSize / 2
         
         return CGPoint(x: xPos, y: yPos)
     }
     
     private func objectPositionFor(gridX: Int, gridY: Int) -> CGPoint {
         let basePosition = positionFor(gridX: gridX, gridY: gridY)
-        // Смещаем объекты вверх для размещения их на поверхности ячейки
         return CGPoint(x: basePosition.x, y: basePosition.y + cellSize / 2)
     }
     

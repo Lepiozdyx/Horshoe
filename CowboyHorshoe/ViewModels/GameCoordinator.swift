@@ -1,9 +1,5 @@
 //
 //  GameCoordinator.swift
-//  CowboyHorshoe
-//
-//  Created by Alex on 22.02.2025.
-//
 
 import SwiftUI
 import SpriteKit
@@ -16,16 +12,13 @@ final class GameCoordinator: ObservableObject {
     
     // MARK: - Private Properties
     private var viewModel: GameViewModel
-    private var scoreManager: ScoreManager
     private weak var scene: GameScene?
+    private let levelManager = LevelManager.shared
     
     // MARK: - Initialization
-    init(viewModel: GameViewModel = GameViewModel()) {
-        let scoreManager = ScoreManager.shared // Получаем reference в init контексте
-        self.viewModel = viewModel
-        self.scoreManager = scoreManager
-        self.viewModel = viewModel
-        self.scoreManager = scoreManager
+    init() {
+        let config = levelManager.configuration(for: levelManager.currentLevel)
+        self.viewModel = GameViewModel(configuration: config)
     }
     
     // MARK: - Scene Management
@@ -41,16 +34,11 @@ final class GameCoordinator: ObservableObject {
     }
     
     func cleanup() {
-        // Очищаем сцену
         scene?.removeAllChildren()
         scene?.removeFromParent()
         scene = nil
-        
-        // Сбрасываем состояния
         showEndGame = false
         isVictory = false
-        
-        // Сбрасываем игровое состояние
         viewModel.resetGame()
     }
     
@@ -62,9 +50,16 @@ final class GameCoordinator: ObservableObject {
     }
     
     func nextLevel() {
+        levelManager.moveToNextLevel()
         showEndGame = false
-        // TODO: Implement next level logic
-        resetLevel()
+        
+        // Create new viewModel with next level configuration
+        let config = levelManager.configuration(for: levelManager.currentLevel)
+        viewModel = GameViewModel(configuration: config)
+        
+        // Reset scene with new viewModel
+        scene?.viewModel = viewModel
+        scene?.resetScene()
     }
     
     // MARK: - Game Actions
@@ -80,7 +75,7 @@ final class GameCoordinator: ObservableObject {
     private func handleGameOver(isWin: Bool) {
         isVictory = isWin
         if isWin {
-            scoreManager.addScore(10)
+            ScoreManager.shared.addScore(10)
         }
         showEndGame = true
     }
