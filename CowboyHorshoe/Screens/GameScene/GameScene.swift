@@ -147,6 +147,15 @@ class GameScene: SKScene {
         let newPosition = objectPositionFor(gridX: viewModel.playerPosition.x,
                                             gridY: viewModel.playerPosition.y)
         
+        switch direction {
+        case .left:
+            playerNode.xScale = -abs(playerNode.xScale)
+        case .right:
+            playerNode.xScale = abs(playerNode.xScale)
+        default:
+            break
+        }
+        
         let moveAction = SKAction.move(to: newPosition, duration: Constants.moveAnimationDuration)
         let updateZAction = SKAction.run { [weak self] in
             guard let self = self else { return }
@@ -158,6 +167,12 @@ class GameScene: SKScene {
     
     func performThrow() {
         guard !horseshoeNodes.isEmpty else { return }
+        
+        // Анимация броска ковбоя
+        let scaleUp = SKAction.scale(to: 1.15, duration: 0.1)
+        let scaleDown = SKAction.scale(to: 1.0, duration: 0.1)
+        let throwAnimation = SKAction.sequence([scaleUp, scaleDown])
+        playerNode.run(throwAnimation)
         
         let initialPositions = viewModel.horseshoePositions
         let throwResult = viewModel.performThrow()
