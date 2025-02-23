@@ -1,9 +1,5 @@
 //
 //  LoadingView.swift
-//  CowboyHorshoe
-//
-//  Created by Alex on 17.02.2025.
-//
 
 import SwiftUI
 

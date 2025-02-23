@@ -1,9 +1,5 @@
 //
 //  CowboyHorshoeApp.swift
-//  CowboyHorshoe
-//
-//  Created by Alex on 15.02.2025.
-//
 
 import SwiftUI
 
@@ -11,7 +7,7 @@ import SwiftUI
 struct CowboyHorshoeApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .preferredColorScheme(.light)
         }
     }

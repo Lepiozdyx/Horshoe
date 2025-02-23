@@ -6,6 +6,8 @@ import SwiftUI
 struct ContentView: View {
     
     @StateObject private var scoreManager = ScoreManager.shared
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var settings = SettingsManager.shared
     
     var body: some View {
         NavigationView {
@@ -16,17 +18,17 @@ struct ContentView: View {
                     ScoreboardView(value: scoreManager.score)
 
                     HStack(spacing: 30) {
-                        // SettingsView()
+                        // SettingsView
                         NavigationLink(destination: SettingsView()) {
                             MenuButtonView(name: .settings)
                         }
                         
-                        // RulesView()
+                        // RulesView
                         NavigationLink(destination: RulesView()) {
                             MenuButtonView(name: .rules)
                         }
                         
-                        // ShopView()
+                        // ShopView
                         NavigationLink(destination: ShopView()) {
                             MenuButtonView(name: .shop)
                         }
@@ -35,7 +37,7 @@ struct ContentView: View {
                     
                     Spacer()
                     
-                    // GameView()
+                    // GameView
                     NavigationLink(destination: GameView()) {
                         Image(.start)
                             .resizable()
@@ -47,9 +49,20 @@ struct ContentView: View {
             }
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            settings.playBackgroundMusic()
+        }
+        .onChange(of: scenePhase) { newPhase in
+            switch newPhase {
+            case .active:
+                settings.playBackgroundMusic()
+            case .background, .inactive:
+                settings.stopBackgroundMusic()
+            @unknown default:
+                break
+            }
+        }
     }
-    
-    // TODO: Handle music states
 }
 
 #Preview {

@@ -10,9 +10,22 @@
 		FA2669FF2D60D2590033ECFD /* CowboyHorshoe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CowboyHorshoe.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		FA73C4972D6B867500069D86 /* Exceptions for "CowboyHorshoe" folder in "CowboyHorshoe" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = FA2669FE2D60D2590033ECFD /* CowboyHorshoe */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		FA266A012D60D2590033ECFD /* CowboyHorshoe */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				FA73C4972D6B867500069D86 /* Exceptions for "CowboyHorshoe" folder in "CowboyHorshoe" target */,
+			);
 			path = CowboyHorshoe;
 			sourceTree = "<group>";
 		};
@@ -254,6 +267,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"CowboyHorshoe/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CowboyHorshoe/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Horshoe Games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -288,6 +302,7 @@
 				DEVELOPMENT_ASSET_PATHS = "\"CowboyHorshoe/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CowboyHorshoe/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Horshoe Games";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

@@ -1,9 +1,5 @@
 //
 //  SettingsManager.swift
-//  CowboyHorshoe
-//
-//  Created by Alex on 17.02.2025.
-//
 
 import UIKit
 import AVFoundation
@@ -39,6 +35,7 @@ final class SettingsManager: ObservableObject {
     private var clickPlayer: AVAudioPlayer?
     
     private init() {
+        #warning("")
         self.appID = ""
         self.appStoreURL = URL(string: "https://apps.apple.com/app/id\(appID)")!
         
@@ -51,7 +48,7 @@ final class SettingsManager: ObservableObject {
         prepareClickSound()
     }
     
-    // MARK: - Methoods
+    // MARK: - Methods
     
     // MARK: Sound
     func toggleSound() {
