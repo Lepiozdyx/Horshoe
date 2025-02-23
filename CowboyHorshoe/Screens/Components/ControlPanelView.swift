@@ -70,6 +70,7 @@ struct ControlPanelView: View {
                     .scaledToFit()
                     .frame(maxWidth: 120)
             }
+            .playSound()
         }
     }
 }
