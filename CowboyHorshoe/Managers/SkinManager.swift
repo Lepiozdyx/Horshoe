@@ -25,7 +25,7 @@ final class SkinManager: ObservableObject {
     private let currentSkinKey = "currentSkin"
     
     private init() {
-        // Инициализация purchasedSkinIndexes
+
         let defaultSkins = Set([
             "\(CharacterType.cowboy.rawValue)_0",
             "\(CharacterType.cowgirl.rawValue)_0"
@@ -37,7 +37,6 @@ final class SkinManager: ObservableObject {
             self.purchasedSkinIndexes = defaultSkins
         }
         
-        // Инициализация currentSkin
         if let savedSkinData = defaults.data(forKey: currentSkinKey),
            let savedSkin = try? JSONDecoder().decode(PlayerSkin.self, from: savedSkinData) {
             self.currentSkin = savedSkin
@@ -45,7 +44,6 @@ final class SkinManager: ObservableObject {
             self.currentSkin = PlayerSkin(type: .cowboy, imageIndex: 0)
         }
         
-        // После инициализации всех свойств сохраняем начальное состояние
         if defaults.stringArray(forKey: purchasedSkinsKey) == nil {
             savePurchasedSkins()
         }

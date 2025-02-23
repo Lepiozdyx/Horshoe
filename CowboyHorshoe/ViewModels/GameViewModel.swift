@@ -79,7 +79,7 @@ class GameViewModel: ObservableObject {
         
         for i in 0..<horseshoePositions.count where !placedHorseshoeIndices.contains(i) {
             let horseshoePos = horseshoePositions[i]
-            let initialPos = initialPositions[i]
+            let _ = initialPositions[i]
             
             guard let direction = getMovementDirection(from: horseshoePos) else { continue }
             
@@ -88,22 +88,15 @@ class GameViewModel: ObservableObject {
             
             if isOnPillar(position: newPosition) {
                 currentPlacedIndices.insert(i)
-                print("🎯 Подкова \(i) попала на столб в позиции \(newPosition)")
-                print("📊 Всего подков на столбах: \(currentPlacedIndices.count) из \(pillarPositions.count) необходимых")
             }
             
             if (isEdge(newPosition) || isEmptyTile(position: newPosition)) && !isOnPillar(position: newPosition) {
                 isOutThisThrow = true
                 isGameLost = true
-                print("❌ Подкова \(i) ушла в аут! Начальная позиция: \(initialPos), конечная: \(newPosition)")
             }
         }
         
         placedHorseshoeIndices = currentPlacedIndices
-        
-        if isVictory() {
-            print("🏆 ПОБЕДА! Все столбы (\(pillarPositions.count)) заняты подковами")
-        }
         
         return ThrowResult(
             newPositions: horseshoePositions,

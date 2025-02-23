@@ -64,17 +64,13 @@ class GameScene: SKScene {
     private var pillarNodes: [SKSpriteNode] = []
     
     private var cellSize: CGFloat {
-        // Используем доступную область вместо всего размера экрана
         let maxWidth = availableGameArea.width * Constants.boardScale
         let maxHeight = availableGameArea.height * Constants.boardScale
         
-        // Рассчитываем размер ячейки исходя из ширины
         let cellSizeByWidth = maxWidth / CGFloat(viewModel.gridWidth)
         
-        // Рассчитываем реальную высоту доски при таком размере ячейки
         let totalHeightByWidth = cellSizeByWidth + (cellSizeByWidth - (cellSizeByWidth * Constants.cellOverlapFactor)) * CGFloat(viewModel.gridHeight - 1)
         
-        // Если высота доски не помещается, пересчитываем размер ячейки исходя из высоты
         if totalHeightByWidth > maxHeight {
             let factor = 1 + (1 - Constants.cellOverlapFactor) * CGFloat(viewModel.gridHeight - 1)
             return maxHeight / factor
@@ -86,13 +82,11 @@ class GameScene: SKScene {
     private var availableGameArea: CGRect {
         let isLandscape = size.width > size.height
         if isLandscape {
-            // В ландшафте учитываем боковые панели управления
             let leftPadding = Constants.controlPanelWidthLandscape
             let rightPadding = Constants.controlPanelWidthLandscape
             let width = size.width - leftPadding - rightPadding
             return CGRect(x: leftPadding, y: 0, width: width, height: size.height)
         } else {
-            // В портрете учитываем нижнюю панель управления
             let height = size.height
             return CGRect(x: 0, y: 0, width: size.width, height: height)
         }
@@ -129,17 +123,15 @@ class GameScene: SKScene {
     // MARK: - Public Methods
     
     func resetScene() {
-        // Удаляем все игровые объекты
         boardNode.removeAllChildren()
         horseshoeNodes.removeAll()
         obstacleNodes.removeAll()
         pillarNodes.removeAll()
-        playerNode = nil  // Обнуляем ссылку на игрока
+        playerNode = nil
         
-        // Пересоздаем сцену с фоном
         setupScene()
         setupBoard()
-        setupGameObjects()  // Это создаст новые объекты с позициями из viewModel
+        setupGameObjects()
     }
     
     func movePlayer(direction: GameViewModel.Direction) {
@@ -168,7 +160,6 @@ class GameScene: SKScene {
     func performThrow() {
         guard !horseshoeNodes.isEmpty else { return }
         
-        // Анимация броска ковбоя
         let scaleUp = SKAction.scale(to: 1.15, duration: 0.1)
         let scaleDown = SKAction.scale(to: 1.0, duration: 0.1)
         let throwAnimation = SKAction.sequence([scaleUp, scaleDown])
@@ -179,7 +170,6 @@ class GameScene: SKScene {
         var movingHorseshoes = 0
         var completedAnimations = 0
         
-        // Подсчитываем количество подков, которые должны двигаться
         for (index, _) in horseshoeNodes.enumerated() {
             let initial = initialPositions[index]
             let final = throwResult.newPositions[index]
@@ -188,18 +178,15 @@ class GameScene: SKScene {
             }
         }
         
-        // Если нет движущихся подков, сразу проверяем результат
         if movingHorseshoes == 0 {
             handleThrowResult(throwResult)
             return
         }
         
-        // Анимируем движущиеся подковы
         for (index, hshoeNode) in horseshoeNodes.enumerated() {
             let initial = initialPositions[index]
             let final = throwResult.newPositions[index]
             
-            // Пропускаем неподвижные подковы
             guard initial != final else { continue }
             
             let path = calculatePath(from: initial, to: final)
@@ -213,7 +200,6 @@ class GameScene: SKScene {
                 
                 completedAnimations += 1
                 
-                // Проверяем результат после завершения всех анимаций
                 if completedAnimations == movingHorseshoes {
                     self.handleThrowResult(throwResult)
                 }
@@ -244,7 +230,6 @@ class GameScene: SKScene {
     private func setupBoardNode() {
         boardNode = SKNode()
         
-        // Центрируем доску относительно доступной игровой области
         let centerX = availableGameArea.midX - size.width/2
         let centerY = availableGameArea.midY - size.height/2
         
@@ -259,7 +244,6 @@ class GameScene: SKScene {
     private func setupBoard() {
         let cubeTexture = SKTexture(imageNamed: ImageNames.gameCube.rawValue)
         
-        // Отрисовываем ячейки сверху вниз для правильного наложения
         for y in (0..<viewModel.gridHeight).reversed() {
             for x in 0..<viewModel.gridWidth {
                 let position = positionFor(gridX: x, gridY: y)
@@ -270,7 +254,6 @@ class GameScene: SKScene {
                     let cubeNode = SKSpriteNode(texture: cubeTexture,
                                                 size: CGSize(width: cellSize, height: cellSize))
                     cubeNode.position = position
-                    // Фиксированный z-index для ячеек
                     cubeNode.zPosition = Constants.ZPosition.boardBase
                     boardNode.addChild(cubeNode)
                 }
@@ -404,18 +387,12 @@ class GameScene: SKScene {
     }
     
     private func handleThrowResult(_ result: GameViewModel.ThrowResult) {
-        print("\n📍 Проверка результата броска:")
-        
         if viewModel.isGameLost {
-            print("❌ ПОРАЖЕНИЕ: Подкова вышла за пределы поля")
             gameOverCallback?(false)
         } else if viewModel.isVictory() {
-            print("🏆 ПОБЕДА: Все столбы заняты подковами")
             gameOverCallback?(true)
         } else {
-            print("🎮 Игра продолжается...")
-            print("- Подковы на столбах: \(result.placedHorseshoes.count)")
-            print("- Всего столбов: \(viewModel.pillarPositions.count)")
+            //
         }
     }
 }

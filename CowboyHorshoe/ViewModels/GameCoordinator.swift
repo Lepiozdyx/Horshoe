@@ -7,21 +7,25 @@ import SpriteKit
 @MainActor
 final class GameCoordinator: ObservableObject {
     // MARK: - Published Properties
+    
     @Published private(set) var showEndGame = false
     @Published private(set) var isVictory = false
     
     // MARK: - Private Properties
+    
     private var viewModel: GameViewModel
     private weak var scene: GameScene?
     private let levelManager = LevelManager.shared
     
     // MARK: - Initialization
+    
     init() {
         let config = levelManager.configuration(for: levelManager.currentLevel)
         self.viewModel = GameViewModel(configuration: config)
     }
     
     // MARK: - Scene Management
+    
     func setupNewScene(size: CGSize) -> GameScene {
         let newScene = GameScene(size: size)
         newScene.scaleMode = .aspectFit
@@ -43,6 +47,7 @@ final class GameCoordinator: ObservableObject {
     }
     
     // MARK: - Game Flow Control
+    
     func resetLevel() {
         showEndGame = false
         viewModel.resetGame()

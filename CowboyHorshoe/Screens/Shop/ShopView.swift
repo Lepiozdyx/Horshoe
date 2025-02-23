@@ -12,53 +12,45 @@ struct ShopView: View {
     @State private var showPurchaseAlert = false
     @State private var showInsufficientFundsAlert = false
     
-    @State private var orientation = UIDeviceOrientation.unknown
-    
-    private var isLandscape: Bool {
-        orientation.isLandscape
-    }
-    
     var body: some View {
-        ZStack {
-            BackgroundView(imageName: .bg4)
+        GeometryReader { geometry in
+            let isLandscape = geometry.size.width > geometry.size.height
             
-            VStack {
-                HStack {
-                    ScoreboardView(value: scoreManager.score)
-                    Spacer()
-                    XmarkButtonView()
-                }
-                .padding(.horizontal)
+            ZStack {
+                BackgroundView(imageName: .bg4)
                 
-                Spacer()
-                
-                if isLandscape {
+                VStack(spacing: 0) {
                     HStack {
-                        previewSection
-                        gridSection
+                        ScoreboardView(value: scoreManager.score)
+                        Spacer()
+                        XmarkButtonView()
                     }
-                    .padding(.horizontal)
-                } else {
-                    VStack {
-                        previewSection
-                        gridSection
+                    
+                    Spacer()
+                    
+                    if isLandscape {
+                        HStack(alignment: .center) {
+                            previewSection
+                            gridSection
+                        }
+                    } else {
+                        VStack {
+                            previewSection
+                            gridSection
+                        }
                     }
-                    .padding(.horizontal)
                 }
+                .padding()
             }
-            .padding()
-        }
-        .navigationBarBackButtonHidden(true)
-        .alert("The character was purchased!", isPresented: $showPurchaseAlert) {
-            Button("OK", role: .cancel) { }
-        }
-        .alert("Not enough horseshoes!", isPresented: $showInsufficientFundsAlert) {
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("To get this character, you need 50 horseshoes.")
-        }
-        .onRotate { newOrientation in
-            orientation = newOrientation
+            .navigationBarBackButtonHidden(true)
+            .alert("The character was purchased!", isPresented: $showPurchaseAlert) {
+                Button("OK", role: .cancel) { }
+            }
+            .alert("Not enough horseshoes!", isPresented: $showInsufficientFundsAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("To get this character, you need 50 horseshoes.")
+            }
         }
     }
     
@@ -67,7 +59,6 @@ struct ShopView: View {
             Image(.frame5)
                 .resizable()
                 .scaledToFit()
-                .frame(maxWidth: 450)
                 .overlay(alignment: .top) {
                     characterTypeSelector
                 }
@@ -78,43 +69,47 @@ struct ShopView: View {
             Image(selectedCharacter.images[selectedImageIndex])
                 .resizable()
                 .scaledToFit()
-                .frame(width: 80)
+                .frame(maxHeight: 160)
         }
     }
     
     private var gridSection: some View {
-        Image(.frame5)
-            .resizable()
-            .scaledToFit()
-            .frame(maxWidth: 450)
-            .overlay(alignment: .bottom) {
-                priceTag
-            }
-            .overlay {
-                LazyVGrid(
-                    columns: Array(repeating: .init(.flexible()), count: isLandscape ? 3 : 2),
-                    spacing: 4
-                ) {
-                    ForEach(Array(selectedCharacter.images.enumerated()), id: \.element) { index, image in
-                        Button {
-                            handleSkinSelection(index)
-                        } label: {
-                            Image(.frame4)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 65)
-                                .overlay {
-                                    Image(image)
-                                        .resizable()
-                                        .scaledToFit()
-                                        .padding()
-                                }
-                        }
-                        .opacity(isButtonEnabled(index) ? 1 : 0.5)
-                    }
+        ZStack {
+            Image(.frame5)
+                .resizable()
+                .scaledToFit()
+                .overlay(alignment: .bottom) {
+                    priceTag
                 }
-                .padding(60)
-            }
+                .overlay {
+                    LazyVGrid(
+                        columns: Array(
+                            repeating: .init(.flexible()),
+                            count: 2
+                        ),
+                        spacing: 2
+                    ) {
+                        ForEach(Array(selectedCharacter.images.enumerated()), id: \.element) { index, image in
+                            Button {
+                                handleSkinSelection(index)
+                            } label: {
+                                Image(.frame4)
+                                    .resizable()
+                                    .frame(width: 70, height: 70)
+                                    .overlay {
+                                        Image(image)
+                                            .resizable()
+                                            .scaledToFit()
+                                            .frame(width: 25)
+                                    }
+                            }
+                            .opacity(isButtonEnabled(index) ? 1 : 0.5)
+                        }
+                    }
+                    .padding()
+                    .frame(maxWidth: 200)
+                }
+        }
     }
     
     private var characterTypeSelector: some View {
@@ -143,7 +138,10 @@ struct ShopView: View {
     
     private var chooseButton: some View {
         Button {
-            skinManager.selectSkin(type: selectedCharacter, imageIndex: selectedImageIndex)
+            skinManager.selectSkin(
+                type: selectedCharacter,
+                imageIndex: selectedImageIndex
+            )
         } label: {
             ZStack {
                 Image(.underlay2)
@@ -195,15 +193,6 @@ struct ShopView: View {
     
     private func isButtonEnabled(_ index: Int) -> Bool {
         index == 0 || skinManager.isSkinPurchased(type: selectedCharacter, imageIndex: index) || scoreManager.score >= 50
-    }
-}
-
-extension View {
-    func onRotate(perform action: @escaping (UIDeviceOrientation) -> Void) -> some View {
-        self.onAppear()
-            .onReceive(NotificationCenter.default.publisher(for: UIDevice.orientationDidChangeNotification)) { _ in
-                action(UIDevice.current.orientation)
-            }
     }
 }
 

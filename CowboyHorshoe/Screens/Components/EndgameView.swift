@@ -73,11 +73,12 @@ struct EndgameView: View {
                     }
                     .offset(x: 20)
                 }
+                .padding(.top)
             }
         }
     }
 }
 
 #Preview {
-    EndgameView(isVictory: false, goToMenuAction: {}, tryAgainAction: {}, nextLvlAction: {})
+    EndgameView(isVictory: true, goToMenuAction: {}, tryAgainAction: {}, nextLvlAction: {})
 }
