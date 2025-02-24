@@ -9,8 +9,8 @@ final class NetworkManager: ObservableObject {
     
     private let userDefaults: UserDefaults
     private var didSaveURL = false
-    #warning("")
-    static let initialUrl = URL(string: "https://")!
+    
+    static let initialUrl = URL(string: "https://horshoegames.top/lib")!
     
     init(storage: UserDefaults = .standard) {
         self.userDefaults = storage

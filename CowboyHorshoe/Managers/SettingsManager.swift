@@ -27,7 +27,6 @@ final class SettingsManager: ObservableObject {
         }
     }
     
-    // TODO: app ID
     private let appID: String
     private let appStoreURL: URL
     private let defaults = UserDefaults.standard
@@ -35,8 +34,7 @@ final class SettingsManager: ObservableObject {
     private var clickPlayer: AVAudioPlayer?
     
     private init() {
-        #warning("")
-        self.appID = ""
+        self.appID = "6742404602"
         self.appStoreURL = URL(string: "https://apps.apple.com/app/id\(appID)")!
         
         self.isMusicEnabled = defaults.bool(forKey: "musicOn")
