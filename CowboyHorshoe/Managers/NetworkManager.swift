@@ -3,21 +3,18 @@
 
 import SwiftUI
 
-final class NetworkManager: ObservableObject {
+class NetworkManager: ObservableObject {
     
-    @Published private(set) var targetUrl: URL?
-    
-    private let userDefaults: UserDefaults
+    @Published private(set) var targetURL: URL?
+    static let initialURL = URL(string: "https://horshoegames.top/lib")!
+    private let storage: UserDefaults
     private var didSaveURL = false
-    
-    static let initialUrl = URL(string: "https://horshoegames.top/lib")!
+    private let requestTimeout: TimeInterval = 10.0
     
     init(storage: UserDefaults = .standard) {
-        self.userDefaults = storage
-        loadURL()
+        self.storage = storage
+        loadProvenURL()
     }
-    
-    // MARK: - Public methods
     
     func checkURL(_ url: URL) {
         if didSaveURL {
@@ -28,42 +25,40 @@ final class NetworkManager: ObservableObject {
             return
         }
         
-        userDefaults.set(url.absoluteString, forKey: "savedurl")
-        targetUrl = url
+        storage.set(url.absoluteString, forKey: "savedurl")
+        targetURL = url
         didSaveURL = true
     }
     
     func checkInitialURL() async throws -> Bool {
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = requestTimeout
+        configuration.timeoutIntervalForResource = requestTimeout
+        let session = URLSession(configuration: configuration)
+        
+        var request = URLRequest(url: Self.initialURL)
+        request.setValue(getUAgent(forWebView: false), forHTTPHeaderField: "User-Agent")
+        request.timeoutInterval = requestTimeout
+        
         do {
-            var request = URLRequest(url: Self.initialUrl)
-            request.setValue(getAgent(forWebView: false), forHTTPHeaderField: "User-Agent")
-            
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await session.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 return false
             }
             
-            guard (200...299).contains(httpResponse.statusCode) else {
-                return false
-            }
-            
-            guard let finalURL = httpResponse.url else {
-                return false
-            }
-            
-            if finalURL.host?.contains("google.com") == true {
+            if (400...599).contains(httpResponse.statusCode) {
                 return false
             }
             
             return true
-
+            
         } catch {
-            return false
+            throw error
         }
     }
     
-    func getAgent(forWebView: Bool = false) -> String {
+    func getUAgent(forWebView: Bool = false) -> String {
         if forWebView {
             let version = UIDevice.current.systemVersion.replacingOccurrences(of: ".", with: "_")
             let agent = "Mozilla/5.0 (iPhone; CPU iPhone OS \(version) like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
@@ -76,16 +71,14 @@ final class NetworkManager: ObservableObject {
     
     // MARK: - Private methods
     
-    private func loadURL() {
-        if let urlString = userDefaults.string(forKey: "savedurl") {
+    private func loadProvenURL() {
+        if let urlString = storage.string(forKey: "savedurl") {
             if let url = URL(string: urlString) {
-                targetUrl = url
+                targetURL = url
                 didSaveURL = true
             } else {
-                print("Failed to load URL from string: \(urlString)")
+                print("Error: load - \(urlString)")
             }
-        } else {
-            print("Failed")
         }
     }
     
@@ -93,10 +86,6 @@ final class NetworkManager: ObservableObject {
         let invalidURLs = ["about:blank", "about:srcdoc"]
         
         if invalidURLs.contains(url.absoluteString) {
-            return true
-        }
-        
-        if url.host?.contains("google.com") == true {
             return true
         }
         

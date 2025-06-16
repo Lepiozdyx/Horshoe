@@ -7,7 +7,7 @@ import SwiftUI
 struct WebViewManager: UIViewRepresentable {
     
     let url: URL
-    let manager: NetworkManager
+    let webManager: NetworkManager
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -17,19 +17,16 @@ struct WebViewManager: UIViewRepresentable {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
-        
         let preferences = WKWebpagePreferences()
         preferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = preferences
-        
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
         webView.allowsLinkPreview = true
         webView.scrollView.showsHorizontalScrollIndicator = false
         webView.scrollView.bounces = true
-        webView.customUserAgent = manager.getAgent(forWebView: true)
-        
+        webView.customUserAgent = webManager.getUAgent(forWebView: true)
         return webView
     }
     
@@ -51,19 +48,9 @@ struct WebViewManager: UIViewRepresentable {
                 return
             }
             
-            if finalURL != NetworkManager.initialUrl {
-                parent.manager.checkURL(finalURL)
-            } else {
-                print("Error")
-            }
-        }
-        
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            print("Navigation error")
-        }
-        
-        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            print("Navigation error")
+            if finalURL != NetworkManager.initialURL {
+                parent.webManager.checkURL(finalURL)
+            } else {}
         }
     }
 }

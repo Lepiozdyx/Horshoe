@@ -3,40 +3,71 @@
 
 import Foundation
 
-@MainActor final class RootViewModel: ObservableObject {
-    // MARK: - States enum
+@MainActor
+final class RootViewModel: ObservableObject {
     
-    enum States {
-        case loading
+    enum AppState {
+        case fetch
         case initial
         case menu
     }
     
-    @Published private(set) var state: States = .loading
+    @Published private(set) var appState: AppState = .fetch
+    let webManager: NetworkManager
     
-    let manager: NetworkManager
+    private var timeoutTask: Task<Void, Never>?
+    private let maxLoadingTime: TimeInterval = 10.0
     
-    init(manager: NetworkManager = NetworkManager()) {
-        self.manager = manager
+    init(webManager: NetworkManager = NetworkManager()) {
+        self.webManager = webManager
     }
     
     func stateCheck() {
-        Task {
-            if manager.targetUrl != nil {
-                state = .initial
-                return
-            }
-            
+        timeoutTask?.cancel()
+        
+        Task { @MainActor in
             do {
-                if try await manager.checkInitialURL() {
-                    state = .initial
-                } else {
-                    state = .menu
+                if webManager.targetURL != nil {
+                    updateState(.initial)
+                    return
                 }
-            }
-            catch {
-                state = .menu
+                
+                let shouldShowWebView = try await webManager.checkInitialURL()
+                
+                if shouldShowWebView {
+                    updateState(.initial)
+                } else {
+                    updateState(.menu)
+                }
+                
+            } catch {
+                updateState(.menu)
             }
         }
+        
+        startTimeoutTask()
+    }
+    
+    private func updateState(_ newState: AppState) {
+        timeoutTask?.cancel()
+        timeoutTask = nil
+        
+        appState = newState
+    }
+    
+    private func startTimeoutTask() {
+        timeoutTask = Task { @MainActor in
+            do {
+                try await Task.sleep(nanoseconds: UInt64(maxLoadingTime * 1_000_000_000))
+                
+                if self.appState == .fetch {
+                    self.appState = .menu
+                }
+            } catch {}
+        }
+    }
+    
+    deinit {
+        timeoutTask?.cancel()
     }
 }
